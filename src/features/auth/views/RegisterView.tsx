@@ -7,7 +7,7 @@ import { useRegisterMutation } from "../hooks/useAuthMutation";
 export default function RegisterView() {
   const { mutate: registerUser, isPending, error: mutationError } = useRegisterMutation();
 
-  // Initialize React Hook Form and tie it to your Zod structural schema rules
+  // Initialize React Hook Form and tie it to Zod structural schema rules
   const {
     register,
     handleSubmit,
@@ -116,7 +116,7 @@ export default function RegisterView() {
                 className={`pl-10 w-full p-2.5 border rounded-lg outline-none focus:ring-2 ${
                   errors.password ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-indigo-500'
                 }`}
-                placeholder="••••••••"
+                placeholder="*******"
               />
             </div>
             {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}

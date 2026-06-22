@@ -11,7 +11,7 @@ const axiosClient = axios.create({
 // Outgoing Request Interceptor: Attach the bearer token dynamically
 axiosClient.interceptors.request.use(
   (config) => {
-    const token = useAuthStore.getState().token; // 🟢 Pulls token directly from Zustand state
+    const token = useAuthStore.getState().token; //Pulls token directly from Zustand state
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -25,7 +25,7 @@ axiosClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      useAuthStore.getState().logout(); // 🟢 Automatically clears memory and handles logouts
+      useAuthStore.getState().logout(); // Automatically clears memory and handles logouts
       window.location.href = '/login';
     }
     return Promise.reject(error);

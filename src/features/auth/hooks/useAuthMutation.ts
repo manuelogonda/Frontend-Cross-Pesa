@@ -11,7 +11,7 @@ export const useRegisterMutation = () => {
   return useMutation({
     mutationFn: (data: RegisterInput) => authApi.register(data),
     onSuccess: (data) => {
-      // 🟢 Pipeline success data straight to your Zustand client memory
+      // Pipeline success data straight to Zustand client memory
       setAuth(data.token, data.userId, data.email);
       navigate('/dashboard');
     },

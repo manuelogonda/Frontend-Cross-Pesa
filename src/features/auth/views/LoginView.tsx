@@ -11,7 +11,7 @@ export default function LoginView() {
   const [loading, setLoading] = useState(false);
   
   const navigate = useNavigate();
-  const setAuth = useAuthStore((state) => state.setAuth); // 🟢 Import Zustand trigger
+  const setAuth = useAuthStore((state) => state.setAuth); 
 
   const handleLogin = async (e: React.SubmitEvent) => {
     e.preventDefault();
@@ -21,7 +21,7 @@ export default function LoginView() {
     try {
       const data = await authApi.login({ email, password });
       
-      // 🟢 Save straight to global state (Zustand updates localStorage for us!)
+      // Save straight to global state (Zustand updates localStorage for us!)
       setAuth(data.token, data.userId, data.email);
       
       navigate('/dashboard'); 
