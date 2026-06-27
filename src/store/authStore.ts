@@ -1,49 +1,57 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { type AuthResponse } from '../features/auth/validation/authSchema';
 
-// We extract the user details from the AuthResponse by omitting the token
-type User = Omit<AuthResponse, 'token'>;
+interface AuthUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+}
 
 interface AuthState {
-  token: string | null;
-  user: User | null;
+  user: AuthUser | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
-  
-  // Actions
-  login: (data: AuthResponse) => void;
+  login: (data: { user: AuthUser; accessToken: string; refreshToken: string }) => void;
+  updateTokens: (accessToken: string, refreshToken: string) => void;
   logout: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      // Initial State
-      token: null,
       user: null,
+      accessToken: null,
+      refreshToken: null,
       isAuthenticated: false,
 
-      // Actions
-      login: (data) => 
+      login: (data) =>
         set({
-          token: data.token,
-          user: {
-            email: data.email,
-            firstName: data.firstName,
-            role: data.role,
-          },
+          user: data.user,
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
           isAuthenticated: true,
         }),
 
-      logout: () => 
+      // silently update tokens from the interceptor
+      updateTokens: (accessToken, refreshToken) =>
         set({
-          token: null,
+          accessToken,
+          refreshToken,
+        }),
+
+      logout: () =>
+        set({
           user: null,
+          accessToken: null,
+          refreshToken: null,
           isAuthenticated: false,
         }),
     }),
     {
-      name: 'crosspesa-auth-storage', // The key used in localStorage
+      name: 'cross-pesa-auth',
     }
   )
 );
