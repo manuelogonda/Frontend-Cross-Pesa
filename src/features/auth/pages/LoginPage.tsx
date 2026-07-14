@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Loader2, Mail, Lock } from 'lucide-react';
 import { loginSchema, type LoginFormData } from '../validation/authSchema';
 import { useLogin } from '../hooks/useAuthMutation';
+import { GoogleLoginButton } from '../../../components/ui/GoogleLoginButton';
 
 export const LoginPage = () => {
   const { mutate: login, isPending, error } = useLogin();
@@ -28,7 +29,7 @@ export const LoginPage = () => {
             Welcome back to Cross Pesa
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Securely access your global wallet
+            Login to access your global wallet
           </p>
         </div>
 
@@ -96,6 +97,7 @@ export const LoginPage = () => {
             Register here
           </Link>
         </p>
+        <GoogleLoginButton />
       </div>
     </div>
   );

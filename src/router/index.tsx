@@ -2,7 +2,17 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
 import { ProtectedRoute } from "../components/layout/ProtectedRoute";
-import { DashboardPage } from "../features/wallet/pages/DashboardPage";
+import { OAuth2RedirectHandler } from "../components/ui/OAuth2RedirectHandler";
+import { BeneficiaryPage } from "../features/beneficiaries/components/BeneficiaryPage";
+import { TransferForm } from "../features/transfer/components/TransferForm";
+import { WalletDashboardPage } from "../features/wallet/pages/WalletDashboardPage";
+import { DashboardLayout } from "../components/layout/DashboardLayout";
+import { TopUpPage } from "../features/wallet/pages/TopUpPage";
+import { HomePage } from "../pages/HomePage";
+import { ExchangeForm } from "../features/transfer/components/ExchngeFrom";
+import { CreateWalletPage } from "../features/wallet/pages/CreateWalletPage";
+import { AdminDashboardPage } from "../features/admin/pages/AdminDashboardPage";
+import { AdminUsersPage } from "../features/admin/pages/AdminUserpage";
 
 export const router = createBrowserRouter([
   {
@@ -18,13 +28,45 @@ export const router = createBrowserRouter([
     element: <RegisterPage />,
   },
   {
-    element: <ProtectedRoute />, // Protects all routes nested inside it
+    path: '/home',
+    element: <HomePage />,
+  },
+  {
+    path: '/oauth2/redirect',
+    element: <OAuth2RedirectHandler />, // Catches the Google login redirect
+  },
+  { path: '/admin-dashboard', 
+    element: <AdminDashboardPage /> 
+  },
+  { path: '/admin-users', 
+    element: <AdminUsersPage /> 
+  },
+  {
+    element: <ProtectedRoute />, 
     children: [
       {
-        path: '/dashboard',
-        element: <DashboardPage />,
+        element: <DashboardLayout />, // Wrap protected routes in the layout
+        children: [
+          { path: '/dashboard', element: <WalletDashboardPage /> },
+          { path: '/transfer', element: <TransferForm /> },
+          { path: '/top-up', element: <TopUpPage /> },
+          { path: '/wallets', element: <CreateWalletPage /> },
+          {path: '/exchange', element: <ExchangeForm />},
+          { path: '/beneficiaries', element: <BeneficiaryPage /> },
+        ],
       },
-      // Future protected routes (e.g., /transfer, /settings) will go here
     ],
   },
+
+  // Global 404 Catch-all
+  {
+    path: '*',
+    element: (
+      <div className="flex flex-col items-center justify-center h-screen bg-slate-50">
+        <h1 className="text-4xl font-bold text-slate-800">404</h1>
+        <p className="text-red-500 mt-2">Page not found.</p>
+      </div>
+    )
+  }
+ 
 ]);
