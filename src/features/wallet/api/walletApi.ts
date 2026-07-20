@@ -1,5 +1,7 @@
 import { apiClient } from "../../../lib/axios";
 import type { LedgerEntry } from "../../transfer/types/finance";
+import type { TopUpResponse } from "../services/walletService";
+import type { TopUpFormData } from "../validation/topupSchema";
 import type { Wallet } from "../validation/transferSchema";
 
 export const getWallets = async (): Promise<Wallet[]> => {
@@ -7,8 +9,8 @@ export const getWallets = async (): Promise<Wallet[]> => {
   return data;
 };
 
-export const topUpWallet = async (currency: string, amount: number): Promise<Wallet> => {
-  const { data } = await apiClient.post<Wallet>('/wallets/top-up', { currency, amount });
+export const topUpWallet = async (formData: TopUpFormData): Promise<TopUpResponse> => {
+  const { data } = await apiClient.post<TopUpResponse>('/wallets/topup', formData);
   return data;
 };
 

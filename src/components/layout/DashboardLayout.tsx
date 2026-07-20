@@ -1,4 +1,4 @@
-import { ArrowRightLeft, LayoutDashboard, LogOut, PlusCircle, Send, Users, Wallet } from 'lucide-react';
+import { ArrowRightLeft, LayoutDashboard, LogOut, PlusCircle, Send, User, Users, Wallet } from 'lucide-react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import NotificationBell from '../../features/notifications/components/NotificationBell';
 import { useAuthStore } from '../../store/authStore';
@@ -43,7 +43,7 @@ export const DashboardLayout = () => {
                 <LayoutDashboard size={20}/> Dashboard
             </NavLink>
             <NavLink 
-              to="/top-up" 
+              to="/topup" 
               className={({ isActive }) => `flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${isActive ? 'bg-indigo-50 text-indigo-700' : 'hover:bg-slate-100 text-slate-700'}`}
             >
                 <PlusCircle size={20}/> Top-up Wallet
@@ -60,6 +60,10 @@ export const DashboardLayout = () => {
             <NavLink to="/wallets" className="flex items-center gap-3 px-4 py-2 hover:bg-slate-100 rounded-lg transition-colors">
               <Wallet size={20} className="text-slate-600" /> 
               <span className="font-medium text-slate-700">New Wallet</span>
+            </NavLink>
+            <NavLink to="/kyc-submission" className="flex items-center gap-3 px-4 py-2 hover:bg-slate-100 rounded-lg transition-colors">
+              <User size={20} className="text-slate-600" /> 
+              <span className="font-medium text-slate-700">KYC Submission</span>
             </NavLink>
 
             {/* NEW: Admin Links wrapped in conditional rendering */}
@@ -79,6 +83,12 @@ export const DashboardLayout = () => {
                   className={({ isActive }) => `flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${isActive ? 'bg-red-50 text-red-700' : 'hover:bg-slate-100 text-slate-700'}`}
                 >
                   <Users size={20} /> Manage Users
+                </NavLink>
+                <NavLink 
+                  to="/admin-kyc" 
+                  className={({ isActive }) => `flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${isActive ? 'bg-red-50 text-red-700' : 'hover:bg-slate-100 text-slate-700'}`}
+                >
+                  <User size={20} /> Kyc Admin
                 </NavLink>
               </>
             )}

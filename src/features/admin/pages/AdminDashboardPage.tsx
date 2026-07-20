@@ -52,7 +52,7 @@ export const AdminDashboardPage: React.FC = () => {
             <Activity size={24} />
           </div>
           <div>
-            <p className="text-sm text-slate-500 font-medium">Tx Today</p>
+            <p className="text-sm text-slate-500 font-medium">Transactions Today</p>
             <h3 className="text-2xl font-bold text-slate-800">{metrics?.totalTransactionsToday || 0}</h3>
           </div>
         </div>

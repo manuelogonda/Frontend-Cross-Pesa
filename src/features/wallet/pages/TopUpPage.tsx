@@ -1,37 +1,36 @@
-import { useState } from "react";
-import { useWallets } from "../hooks/useWallets";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { apiClient } from "../../../lib/axios";
 import { AlertCircle, CheckCircle, Loader2, PlusCircle } from "lucide-react";
-import { currencies, topUpSchema, type TopUpFormData } from "../validation/topupSchema";
+import { useWallets } from "../hooks/useWallets";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { currencies,topUpSchema, type TopUpFormData } from "../validation/topupSchema";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 export const TopUpPage: React.FC = () => {
-  const { wallets, isLoading: walletLoading, error: walletError } = useWallets();
+  // 1. Destructure the custom hook elements we built for Flutterwave redirection
+  const { 
+    wallets, 
+    isLoading: walletLoading, 
+    error: walletError,
+    initiateTopUp,
+    isTopUpLoading,
+    topUpError
+  } = useWallets();
+
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting }
+    formState: { errors }
   } = useForm<TopUpFormData>({
     resolver: zodResolver(topUpSchema)
   });
 
   const onSubmit = async (data: TopUpFormData) => {
-    setError(null);
-    try {
-      // API call to the actual backend endpoint
-      await apiClient.post('/wallets/top-up', { 
-        currency: data.currency, 
-        amount: data.amount 
-      });
-      setSuccess(true);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Top-up failed. Please try again.');
-    }
+    // 2. Simply hand off the form payload to the hook. 
+    // It calls Spring Boot and handles the window.location.href redirect out-of-the-box!
+    await initiateTopUp(data);
   };
 
   if (success) {
@@ -52,6 +51,10 @@ export const TopUpPage: React.FC = () => {
     );
   }
 
+  // 3. Combine hook level errors and component state level errors dynamically
+  const displayError = topUpError || walletError;
+  const isProcessing = isTopUpLoading || walletLoading;
+
   return (
     <div className="max-w-md mx-auto mt-10">
       <form onSubmit={handleSubmit(onSubmit)} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
@@ -59,10 +62,10 @@ export const TopUpPage: React.FC = () => {
           <PlusCircle className="text-indigo-500" size={24}/> Add Funds
         </h2>
 
-        {(error || walletError) && (
+        {displayError && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-center gap-2 text-sm">
             <AlertCircle size={18} className="shrink-0" />
-            <p>{error || walletError}</p>
+            <p>{displayError}</p>
           </div>
         )}
 
@@ -70,14 +73,14 @@ export const TopUpPage: React.FC = () => {
           <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Select Wallet</label>
           <select 
             {...register("currency")} 
-            disabled={walletLoading}
+            disabled={isProcessing}
             className={`w-full p-3 rounded-lg border bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${errors.currency ? 'border-red-500' : 'border-slate-200'}`}
           >
            {currencies.map((curr) => (
-           <option key={curr} value={curr}>
-           {curr}
-          </option>
-        ))}
+             <option key={curr} value={curr}>
+               {curr}
+             </option>
+           ))}
           </select>
           {errors.currency && <p className="text-red-500 text-xs mt-1">{errors.currency.message}</p>}
         </div>
@@ -87,7 +90,8 @@ export const TopUpPage: React.FC = () => {
           <input 
             type="number" 
             step="0.01"
-            {...register("amount")}
+            {...register("amount", { valueAsNumber: true })} // Ensures value is cast to a primitive number for Zod matching
+            disabled={isProcessing}
             className={`w-full p-3 rounded-lg border outline-none focus:ring-2 focus:ring-indigo-500 text-lg transition-all ${errors.amount ? 'border-red-500' : 'border-slate-200'}`}
             placeholder="0.00"
           />
@@ -96,13 +100,13 @@ export const TopUpPage: React.FC = () => {
 
         <button 
           type="submit" 
-          disabled={isSubmitting || walletLoading}
+          disabled={isProcessing}
           className="w-full bg-indigo-600 hover:bg-indigo-800 text-white font-bold py-4 rounded-xl transition-all disabled:opacity-50 mt-2 shadow-md flex items-center justify-center gap-2"
         >
-          {isSubmitting ? (
+          {isTopUpLoading ? (
             <>
               <Loader2 className="animate-spin" size={20} />
-              Processing...
+              Redirecting to Secure Checkout...
             </>
           ) : (
             "Fund Wallet"

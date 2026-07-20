@@ -13,6 +13,9 @@ import { ExchangeForm } from "../features/transfer/components/ExchngeFrom";
 import { CreateWalletPage } from "../features/wallet/pages/CreateWalletPage";
 import { AdminDashboardPage } from "../features/admin/pages/AdminDashboardPage";
 import { AdminUsersPage } from "../features/admin/pages/AdminUserpage";
+import { VerifyTopUpPage } from "../features/wallet/pages/VerifyTopUpPage";
+import { KycSubmissionPage } from "../features/kyc/pages/KycSubmissionPage";
+import { KycAdminDashboard } from "../features/kyc/pages/KycAdminDashboard";
 
 export const router = createBrowserRouter([
   {
@@ -42,6 +45,14 @@ export const router = createBrowserRouter([
     element: <AdminUsersPage /> 
   },
   {
+    path: '/admin-kyc',
+    element: <KycAdminDashboard />
+  },
+  {
+    path: "/wallet/verify-topup",
+    element: <VerifyTopUpPage />
+  },
+  {
     element: <ProtectedRoute />, 
     children: [
       {
@@ -49,10 +60,11 @@ export const router = createBrowserRouter([
         children: [
           { path: '/dashboard', element: <WalletDashboardPage /> },
           { path: '/transfer', element: <TransferForm /> },
-          { path: '/top-up', element: <TopUpPage /> },
+          { path: '/topup', element: <TopUpPage /> },
           { path: '/wallets', element: <CreateWalletPage /> },
-          {path: '/exchange', element: <ExchangeForm />},
+          { path: '/exchange', element: <ExchangeForm />},
           { path: '/beneficiaries', element: <BeneficiaryPage /> },
+          { path: '/kyc-submission', element: <KycSubmissionPage /> }
         ],
       },
     ],
