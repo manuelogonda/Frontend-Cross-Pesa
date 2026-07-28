@@ -1,10 +1,22 @@
 import { getLiveFxQuote } from "../api/ratesApi";
-import { fxQuoteResponseSchema } from "../validation/ratesSchema";
+import { fxQuoteRequestSchema, fxQuoteResponseSchema, type FxQuoteResponse } from "../validation/ratesSchema";
 
-export const fetchAndValidateQuote = async (source: string, destination: string): Promise<FxQuoteResponse> => {
-  const rawData = await getLiveFxQuote(source, destination);
+export const fetchAndValidateQuote = async (
+  source: string, 
+  destination: string
+): Promise<FxQuoteResponse> => {
+  // 1. Validate and normalize query params before making the API request
+  const validatedParams = fxQuoteRequestSchema.parse({
+    sourceCurrency: source,
+    destinationCurrency: destination,
+  });
+
+  // 2. Execute network request
+  const rawData = await getLiveFxQuote(
+    validatedParams.sourceCurrency, 
+    validatedParams.destinationCurrency
+  );
   
-  // Ensure the backend didn't send us bad data before returning it to the UI
-  const validatedData = fxQuoteResponseSchema.parse(rawData);
-  return validatedData;
+  // 3. Ensure backend payload strictly conforms to contract
+  return fxQuoteResponseSchema.parse(rawData);
 };

@@ -42,13 +42,18 @@ export const useAuthStore = create<AuthState>()(
           refreshToken,
         }),
 
-      logout: () =>
+      logout: () => {
+
         set({
           user: null,
           accessToken: null,
           refreshToken: null,
           isAuthenticated: false,
-        }),
+        });
+        localStorage.removeItem("cross-pesa-auth"); // Clear persisted state
+      }
+        
+        
     }),
     {
       name: 'cross-pesa-auth',

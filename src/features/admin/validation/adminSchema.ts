@@ -1,42 +1,48 @@
-import { z } from 'zod';
+// ==========================================
+// 1. ENUMS (Aligned with Spring Boot Entities)
+// ==========================================
 
-export const AdminTransactionSchema = z.object({
-  transactionId: z.uuid(),
-  senderName: z.string(),
-  senderEmail: z.email(),
-  beneficiaryName: z.string(),
-  beneficiaryAccount: z.string(),
-  sourceAmount: z.number(),
-  sourceCurrency: z.string(),
-  destinationAmount: z.number(),
-  destinationCurrency: z.string(),
-  exchangeRate: z.number(),
-  platformFee: z.number(),
-  status: z.enum(['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'FLAGGED']),
-  gatewayReference: z.string(),
-  createdAt: z.string(),
-});
+import z from "zod";
 
-export const DashboardMetricsSchema = z.object({
-  totalTransactionsToday: z.number(),
-  pendingTransactions: z.number(),
-  flaggedTransactions: z.number(),
-  totalRevenueToday: z.number(),
-});
+export const CurrencySchema = z.enum([
+  "KES", "USD", "CNY", "JPY", "GBP", "CAD", 
+  "AUD", "PKR", "AED", "SAR", "EUR", "SEK"
+]);
 
-// Defines the Spring Boot Pagination wrapper
-export const PaginatedAdminTransactionSchema = z.object({
-  content: z.array(AdminTransactionSchema),
-  totalPages: z.number(),
-  totalElements: z.number(),
-  size: z.number(),
-  number: z.number(), // Current page index (0-based)
-});
+export const WalletTypeSchema = z.enum([
+  "USER_RETAIL",
+  "SYSTEM_MARKUP",
+  "SYSTEM_ROUTING",
+  "SYSTEM_LIQUIDITY",
+]);
 
-export type AdminTransaction = z.infer<typeof AdminTransactionSchema>;
-export type DashboardMetrics = z.infer<typeof DashboardMetricsSchema>;
-export type PaginatedAdminTransactions = z.infer<typeof PaginatedAdminTransactionSchema>;
+export const WalletStatusSchema = z.enum(["ACTIVE", "FROZEN", "SUSPENDED"]);
 
+export const TransactionStatusSchema = z.enum([
+  "PENDING",
+  "PROCESSING",
+  "COMPLETED",
+  "FLAGGED",
+  "FAILED",
+  "CANCELLED",
+]);
+
+export const KycStatusSchema = z.enum(["PENDING", "APPROVED", "REJECTED"]);
+
+export const EntryClassSchema = z.enum([
+  "PRINCIPAL_TRANSFER",
+  "MARKUP_FEE",
+  "ROUTING_FEE",
+  "FX_CLEARING",
+  "DEPOSIT",
+  "WITHDRAWAL",
+  "REFUND",
+  "TREASURY_ADJUSTMENT",
+]);
+
+// ==========================================
+// 2. USER MANAGEMENT & KYC SCHEMAS
+// ==========================================
 
 export const AdminUserSchema = z.object({
   id: z.string().uuid(),
@@ -46,19 +52,154 @@ export const AdminUserSchema = z.object({
   phoneNumber: z.string().nullable(),
   idType: z.string().nullable(),
   idNumber: z.string().nullable(),
-  status: z.enum(['ACTIVE', 'SUSPENDED', 'LOCKED']),
-  kycStatus: z.enum(['PENDING', 'APPROVED', 'REJECTED']),
-  kycLevel: z.number(),
+  status: WalletStatusSchema,
+  kycStatus: KycStatusSchema,
+  kycLevel: z.number().int().min(0),
   createdAt: z.string(),
 });
 
-export const PaginatedAdminUsersSchema = z.object({
-  content: z.array(AdminUserSchema),
-  totalPages: z.number(),
-  totalElements: z.number(),
-  size: z.number(),
-  number: z.number(),
+
+export const KycReviewRequestSchema = z.object({
+  userId: z.string().uuid(),
+  status: z.enum(["APPROVED", "REJECTED"]),
+  kycLevel: z.number().int().min(1).max(3),
+  rejectionReason: z.string().optional(),
 });
 
+// ==========================================
+// 3. WALLETS & TREASURY SCHEMAS
+// ==========================================
+
+export const WalletResponseSchema = z.object({
+  id: z.string().uuid(),
+  currency: CurrencySchema,
+  balance: z.number(),
+  lockedBalance: z.number(),
+  availableBalance: z.number(),
+  status: WalletStatusSchema,
+});
+
+export const TreasuryRebalanceSchema = z.object({
+  sourceCurrency: CurrencySchema,
+  withdrawAmount: z.number().positive("Amount must be greater than zero"),
+  targetCurrency: CurrencySchema,
+  depositAmount: z.number().positive("Amount must be greater than zero"),
+  notes: z.string().min(5, "Rebalance reason/notes are required for audit trail"),
+});
+
+// ==========================================
+// 4. TRANSACTIONS & DOUBLE-ENTRY LEDGER
+// ==========================================
+
+export const AdminTransactionSchema = z.object({
+  id: z.string().uuid(),
+  senderId: z.string().uuid(),
+  sourceWalletId: z.string().uuid(),
+  beneficiaryId: z.string().uuid().nullable(),
+  destinationWalletId: z.string().uuid().nullable(),
+  
+  sourceCurrency: CurrencySchema,
+  destinationCurrency: CurrencySchema,
+  
+  // Ledger Amounts
+  grossAmount: z.number(),
+  netAmount: z.number(),
+  markupFee: z.number(),
+  routingFee: z.number(),
+  totalFee: z.number(),
+  amountReceived: z.number(),
+  
+  // FX Audit Trail
+  fxRateApplied: z.number(),
+  usdNormalizationRate: z.number(),
+  
+  reference: z.string(),
+  status: TransactionStatusSchema,
+  createdAt: z.string(),
+});
+
+export const LedgerEntrySchema = z.object({
+  id: z.string().uuid(),
+  transactionId: z.string().uuid(),
+  walletId: z.string().uuid(),
+  entryClass: EntryClassSchema,
+  debit: z.number(),
+  credit: z.number(),
+  amount: z.number(), // Net impact (credit - debit)
+  balanceAfter: z.number(),
+  currency: CurrencySchema,
+  description: z.string(),
+  createdAt: z.string(),
+});
+
+// ==========================================
+// 5. DASHBOARD METRICS & PAGINATION WRAPPERS
+// ==========================================
+
+export const DashboardMetricsSchema = z.object({
+  totalTransactionsToday: z.number(),
+  pendingTransactions: z.number(),
+  flaggedTransactions: z.number(),
+  totalRevenueToday: z.number(),
+  totalUsers: z.number().optional(),
+});
+
+
+// export const createPaginatedSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
+//   z.object({
+//     content: z.array(itemSchema),
+//     totalPages: z.number(),
+//     totalElements: z.number(),
+//     size: z.number(),
+//     number: z.number(), // Current page index (0-based)
+//   }).loose();
+
+export const createPaginatedSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
+  z.object({
+    content: z.array(itemSchema),
+    totalPages: z.number().optional(),
+    totalElements: z.number().optional(),
+    size: z.number().optional(),
+    number: z.number().optional(),
+    page: z.object({
+      size: z.number(),
+      number: z.number(),
+      totalElements: z.number(),
+      totalPages: z.number(),
+    }).optional(),
+  }).transform((data) => ({
+    content: data.content,
+    totalPages: data.totalPages ?? data.page?.totalPages ?? 0,
+    totalElements: data.totalElements ?? data.page?.totalElements ?? 0,
+    size: data.size ?? data.page?.size ?? 20,
+    number: data.number ?? data.page?.number ?? 0,
+  }));
+
+export const PaginatedAdminTransactionsSchema = createPaginatedSchema(AdminTransactionSchema);
+export const PaginatedAdminUsersSchema = createPaginatedSchema(AdminUserSchema);
+export const PaginatedLedgerEntriesSchema = createPaginatedSchema(LedgerEntrySchema);
+export const PaginatedWalletsSchema = createPaginatedSchema(WalletResponseSchema);
+
+// ==========================================
+// 6. INFERRED TYPESCRIPT TYPES
+// ==========================================
+
+export type Currency = z.infer<typeof CurrencySchema>;
+export type WalletType = z.infer<typeof WalletTypeSchema>;
+export type WalletStatus = z.infer<typeof WalletStatusSchema>;
+export type TransactionStatus = z.infer<typeof TransactionStatusSchema>;
+export type KycStatus = z.infer<typeof KycStatusSchema>;
+export type EntryClass = z.infer<typeof EntryClassSchema>;
+
 export type AdminUser = z.infer<typeof AdminUserSchema>;
+export type KycReviewRequest = z.infer<typeof KycReviewRequestSchema>;
+export type WalletResponse = z.infer<typeof WalletResponseSchema>;
+export type TreasuryRebalance = z.infer<typeof TreasuryRebalanceSchema>;
+export type AdminTransaction = z.infer<typeof AdminTransactionSchema>;
+export type LedgerEntry = z.infer<typeof LedgerEntrySchema>;
+
+export type DashboardMetrics = z.infer<typeof DashboardMetricsSchema>;
+export type PaginatedAdminTransactions = z.infer<typeof PaginatedAdminTransactionsSchema>;
 export type PaginatedAdminUsers = z.infer<typeof PaginatedAdminUsersSchema>;
+export type PaginatedLedgerEntries = z.infer<typeof PaginatedLedgerEntriesSchema>;
+export type PaginatedWallets = z.infer<typeof PaginatedWalletsSchema>;

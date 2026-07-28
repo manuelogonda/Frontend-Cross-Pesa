@@ -1,68 +1,134 @@
-import { useEffect, useState } from "react";
 import { useWallets } from "../hooks/useWallets";
-import { useLedger } from "../../../shared/ledger/hooks/useLedger";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ArrowUpRight, ChevronLeft, ChevronRight, PlusCircle, Wallet } from "lucide-react";
 import { WalletCard } from "../components/WalletCard";
-import { LedgerTable } from "../../../shared/ledger/components/LedgerTable";
+import { useNavigate } from "react-router-dom";
+import { useWalletStatement } from "../hooks/useWalletStatement";
+import { LedgerTable } from "../../ledger/components/LedgerTable";
 
-export const WalletDashboardPage: React.FC = () => {
-  const { wallets, isLoading: isLoadingWallets, error: walletsError } = useWallets();
-  const [activeWalletId, setActiveWalletId] = useState<string | null>(null);
+export const WalletDashboardPage = () => {
+  const navigate = useNavigate();
   
-  // Now using the shared Ledger hook
-  const { entries, isLoading: isLoadingLedger, error: ledgerError } = useLedger(activeWalletId);
+  // 1. Destructure the single 'wallet' object
+  const { wallet, isLoading: isLoadingWallet, error: walletError } = useWallets();
+  
+  // 2. Fetch the paginated double-entry statement (No ID required, perfectly secure)
+  const { 
+    entries, 
+    pagination, 
+    isLoading: isLoadingLedger, 
+    error: ledgerError,
+    nextPage,
+    prevPage 
+  } = useWalletStatement(5); // Show 5 entries per page for a cleaner dashboard view
 
-  useEffect(() => {
-    if (wallets.length > 0 && !activeWalletId) {
-      setActiveWalletId(wallets[0].id);
-    }
-  }, [wallets, activeWalletId]);
-
-  if (isLoadingWallets) {
-    return <div className="p-8 text-center text-slate-500 animate-pulse">Loading dashboard...</div>;
-  }
-
-  if (walletsError) {
+  if (isLoadingWallet) {
     return (
-      <div className="p-6 bg-red-50 text-red-600 rounded-xl flex items-center gap-2">
-        <AlertCircle size={20} />
-        {walletsError}
+      <div className="flex justify-center items-center h-64 text-slate-500">
+         <div className="animate-pulse text-lg font-medium flex items-center gap-2">
+           <Wallet className="text-slate-400" /> Loading dashboard...
+         </div>
       </div>
     );
   }
 
-  const activeWallet = wallets.find(w => w.id === activeWalletId);
+  if (walletError) {
+    return (
+      <div className="max-w-6xl mx-auto p-8">
+        <div className="p-6 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-3">
+          <AlertCircle size={24} className="shrink-0" />
+          <p className="font-medium">{walletError}</p>
+        </div>
+      </div>
+    );
+  }
 
+  // 3. EMPTY STATE: If the user hasn't created a wallet, prompt them to do so
+  if (!wallet) {
+    return (
+      <div className="max-w-3xl mx-auto p-8 mt-12 text-center bg-white rounded-2xl shadow-sm border border-slate-200 animate-in fade-in zoom-in duration-300">
+         <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
+           <PlusCircle size={40} />
+         </div>
+         <h2 className="text-3xl font-bold text-slate-900 mb-3">Welcome to AfriPay</h2>
+         <p className="text-slate-500 mb-8 text-lg">You need to configure your primary currency wallet before you can manage funds.</p>
+         <button 
+           onClick={() => navigate('/create-wallet')}
+           className="bg-indigo-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-md"
+         >
+           Create Your Wallet
+         </button>
+      </div>
+    );
+  }
+
+  // 4. MAIN DASHBOARD
   return (
-    <div className="max-w-6xl mx-auto p-8 space-y-8">
+    <div className="max-w-6xl mx-auto p-8 space-y-8 animate-in fade-in duration-500">
+      
+      {/* Header with Quick Actions */}
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-slate-900"> Wallet Overview</h1>
+        <h1 className="text-3xl font-bold text-slate-900">Wallet Overview</h1>
+        <button 
+           onClick={() => navigate('/topup')}
+           className="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-slate-800 transition-all shadow hover:shadow-lg flex items-center gap-2"
+        >
+          Add Funds
+          <ArrowUpRight size={18} />
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {wallets.map((wallet) => (
-          <WalletCard 
-            key={wallet.id}
-            wallet={wallet}
-            isActive={activeWalletId === wallet.id}
-            onClick={setActiveWalletId}
-          />
-        ))}
+      {/* Wallet Card Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <WalletCard wallet={wallet} />
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-6 border-b border-slate-100">
-          <h2 className="text-xl font-bold text-slate-800">
-            Recent Activity {activeWallet && <span className="text-indigo-600">({activeWallet.currency})</span>}
-          </h2>
+      {/* Ledger Section */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-slate-800">Ledger Statement</h2>
+            <span className="px-3 py-1 bg-indigo-50 text-indigo-700 text-sm font-bold rounded-full">
+              {wallet.currency}
+            </span>
+          </div>
         </div>
         
         {ledgerError ? (
-          <div className="p-6 text-center text-red-500">{ledgerError}</div>
+          <div className="p-8 text-center text-red-500 font-medium">
+            Failed to load transaction history: {ledgerError}
+          </div>
         ) : (
-          <LedgerTable entries={entries} isLoading={isLoadingLedger} />
+          <>
+            <LedgerTable entries={entries} isLoading={isLoadingLedger} />
+            
+            {/* Pagination Controls Hooked up to useWalletStatement */}
+            {entries.length > 0 && (
+              <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-slate-50">
+                <span className="text-sm text-slate-500">
+                  Page <span className="font-medium text-slate-800">{pagination.currentPage + 1}</span> of <span className="font-medium text-slate-800">{Math.max(1, pagination.totalPages)}</span>
+                </span>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={prevPage} 
+                    disabled={pagination.currentPage === 0 || isLoadingLedger}
+                    className="p-1.5 rounded border border-slate-300 bg-white text-slate-600 disabled:opacity-50 hover:bg-slate-100 transition-colors"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button 
+                    onClick={nextPage} 
+                    disabled={pagination.currentPage >= pagination.totalPages - 1 || isLoadingLedger}
+                    className="p-1.5 rounded border border-slate-300 bg-white text-slate-600 disabled:opacity-50 hover:bg-slate-100 transition-colors"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
+      
     </div>
   );
 };

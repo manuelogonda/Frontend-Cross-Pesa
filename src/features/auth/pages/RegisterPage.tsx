@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
-import { Loader2, User, Mail, Phone, Lock } from 'lucide-react';
+import { Loader2, User, Mail, Phone, Lock, HomeIcon } from 'lucide-react';
 import { registerSchema, type RegisterFormData } from '../validation/authSchema';
 import { useRegister } from '../hooks/useAuthMutation';
 
@@ -138,6 +138,12 @@ export const RegisterPage = () => {
             Sign in here
           </Link>
         </p>
+
+        <div className="text-center">
+          <Link to="/" className="font-medium text-indigo-600 hover:text-indigo-500">
+            Back Home 
+          </Link>
+        </div>
       </div>
     </div>
   );

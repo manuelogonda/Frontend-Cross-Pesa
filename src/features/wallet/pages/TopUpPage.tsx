@@ -1,14 +1,16 @@
-import { AlertCircle, CheckCircle, Loader2, PlusCircle } from "lucide-react";
+import { AlertCircle, Loader2, PlusCircle, Wallet } from "lucide-react";
 import { useWallets } from "../hooks/useWallets";
-import { useState } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { currencies,topUpSchema, type TopUpFormData } from "../validation/topupSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate } from "react-router-dom";
+import { TopUpSchema, type TopUpFormData } from "../validation/walletShema";
 
-export const TopUpPage: React.FC = () => {
-  // 1. Destructure the custom hook elements we built for Flutterwave redirection
+export const TopUpPage = () => {
+  const navigate = useNavigate();
+  
   const { 
-    wallets, 
+    wallet, 
     isLoading: walletLoading, 
     error: walletError,
     initiateTopUp,
@@ -16,42 +18,45 @@ export const TopUpPage: React.FC = () => {
     topUpError
   } = useWallets();
 
-  const [success, setSuccess] = useState(false);
-
   const {
     register,
     handleSubmit,
-    reset,
+    setValue, 
     formState: { errors }
   } = useForm<TopUpFormData>({
-    resolver: zodResolver(topUpSchema)
+    resolver: zodResolver(TopUpSchema)
   });
 
+  // Automatically lock the form's currency to the user's actual wallet currency
+  useEffect(() => {
+    if (wallet?.currency) {
+      setValue("currency", wallet.currency);
+    }
+  }, [wallet, setValue]);
+
   const onSubmit = async (data: TopUpFormData) => {
-    // 2. Simply hand off the form payload to the hook. 
-    // It calls Spring Boot and handles the window.location.href redirect out-of-the-box!
     await initiateTopUp(data);
+    // Note: The success state is handled by the Flutterwave redirect callback.
+    // The user will physically leave this page to enter their card details.
   };
 
-  if (success) {
+  // GUARD: Prevent top-up if they haven't created a wallet yet
+  if (!walletLoading && !wallet) {
     return (
-      <div className="max-w-md mx-auto mt-10 bg-white p-8 rounded-2xl shadow-sm border border-green-200 text-center animate-in fade-in zoom-in duration-300">
-        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle size={32} />
-        </div>
-        <h2 className="text-2xl font-bold text-slate-900">Top-up Successful!</h2>
-        <p className="text-slate-500 mt-2">The funds have been successfully added to your wallet.</p>
+      <div className="max-w-md mx-auto mt-10 bg-white p-8 rounded-2xl shadow-sm border border-amber-200 text-center">
+        <AlertCircle size={32} className="text-amber-500 mx-auto mb-4" />
+        <h2 className="text-xl font-bold text-slate-900">No Wallet Found</h2>
+        <p className="text-slate-500 mt-2 mb-6">You need to create a wallet before you can add funds.</p>
         <button 
-          onClick={() => { setSuccess(false); reset(); }}
-          className="mt-8 w-full bg-slate-900 text-white py-3 rounded-xl font-semibold hover:bg-slate-800 transition-colors"
+          onClick={() => navigate('/create-wallet')}
+          className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
         >
-          Top up another wallet
+          Create Wallet
         </button>
       </div>
     );
   }
 
-  // 3. Combine hook level errors and component state level errors dynamically
   const displayError = topUpError || walletError;
   const isProcessing = isTopUpLoading || walletLoading;
 
@@ -70,19 +75,14 @@ export const TopUpPage: React.FC = () => {
         )}
 
         <div className="mb-5">
-          <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Select Wallet</label>
-          <select 
-            {...register("currency")} 
-            disabled={isProcessing}
-            className={`w-full p-3 rounded-lg border bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${errors.currency ? 'border-red-500' : 'border-slate-200'}`}
-          >
-           {currencies.map((curr) => (
-             <option key={curr} value={curr}>
-               {curr}
-             </option>
-           ))}
-          </select>
-          {errors.currency && <p className="text-red-500 text-xs mt-1">{errors.currency.message}</p>}
+          <label className="block text-xs font-semibold text-slate-500 uppercase mb-2">Deposit Currency</label>
+          {/* Read-only UI representation of the user's currency */}
+          <div className="w-full p-3 rounded-lg border bg-slate-50 border-slate-200 text-slate-700 font-semibold flex items-center gap-2">
+            <Wallet size={18} className="text-slate-400" />
+            {walletLoading ? "Loading..." : wallet?.currency}
+          </div>
+          {/* Hidden input to satisfy react-hook-form/Zod requirements securely */}
+          <input type="hidden" {...register("currency")} />
         </div>
 
         <div className="mb-6">
@@ -90,7 +90,7 @@ export const TopUpPage: React.FC = () => {
           <input 
             type="number" 
             step="0.01"
-            {...register("amount", { valueAsNumber: true })} // Ensures value is cast to a primitive number for Zod matching
+            {...register("amount", { valueAsNumber: true })}
             disabled={isProcessing}
             className={`w-full p-3 rounded-lg border outline-none focus:ring-2 focus:ring-indigo-500 text-lg transition-all ${errors.amount ? 'border-red-500' : 'border-slate-200'}`}
             placeholder="0.00"

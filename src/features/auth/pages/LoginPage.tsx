@@ -17,6 +17,12 @@ export const LoginPage = () => {
     resolver: zodResolver(loginSchema),
   });
 
+  {error && (
+  <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg mb-4">
+    {(error as any)?.response?.data?.error || "Invalid email or password."}
+  </div>
+  )}
+
   const onSubmit = (data: LoginFormData) => {
     login(data);
   };
@@ -98,6 +104,11 @@ export const LoginPage = () => {
           </Link>
         </p>
         <GoogleLoginButton />
+        <div className="text-center">
+          <Link to="/" className="font-medium text-indigo-600 hover:text-indigo-500">
+            Back Home
+          </Link>
+        </div>
       </div>
     </div>
   );

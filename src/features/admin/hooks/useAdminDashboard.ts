@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import type { DashboardMetrics, PaginatedAdminTransactions } from "../validation/adminSchema";
 import { fetchAdminTransactionsApi, fetchMetricsApi } from "../api/adminApi";
+import { ZodError } from "zod";
+
+interface PaginationState {
+  currentPage: number;
+  totalPages: number;
+  totalElements: number;
+}
 
 export const useAdminDashboard = () => {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
@@ -9,7 +16,6 @@ export const useAdminDashboard = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters & Pagination State
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [currentPage, setCurrentPage] = useState<number>(0);
 
@@ -27,35 +33,28 @@ export const useAdminDashboard = () => {
       setMetrics(metricsData);
       setTransactionsData(txData);
     } catch (err: any) {
-      console.error("Failed to load admin dashboard:", err);
-      setError(err.message || "Failed to load dashboard data");
+      if (err instanceof ZodError) {
+        console.error("Schema Validation Error:", err.errors);
+        setError("Received invalid data format from the server.");
+      } else {
+        setError(err.response?.data?.message || err.message || "Failed to load dashboard data");
+      }
     } finally {
       setLoading(false);
     }
   }, [statusFilter, currentPage]);
 
-  // Re-fetch whenever the filter or page changes
   useEffect(() => {
     loadDashboardData();
   }, [loadDashboardData]);
 
-  // Handlers
   const handleFilterChange = (newStatus: string) => {
     setStatusFilter(newStatus);
-    setCurrentPage(0); // Reset to first page when changing filters
+    setCurrentPage(0); // Prevent viewing an empty page out-of-bounds
   };
 
-  const nextPage = () => {
-    if (transactionsData && currentPage < transactionsData.totalPages - 1) {
-      setCurrentPage(prev => prev + 1);
-    }
-  };
-
-  const prevPage = () => {
-    if (currentPage > 0) {
-      setCurrentPage(prev => prev - 1);
-    }
-  };
+  const nextPage = () => transactionsData && currentPage < transactionsData.totalPages - 1 && setCurrentPage(prev => prev + 1);
+  const prevPage = () => currentPage > 0 && setCurrentPage(prev => prev - 1);
 
   return {
     metrics,

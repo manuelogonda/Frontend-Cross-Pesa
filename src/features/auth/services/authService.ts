@@ -12,6 +12,7 @@ export const authService = {
       // 2. Catch and format the error
       const errorMessage = error.response?.data?.message || 'Failed to securely log in.';
       console.error('[AuthService] Login Error:', errorMessage);
+      console.error('[AuthService] RAW ERROR DETAILS:', error.response?.status, error.response?.data || error.message);
       throw new Error(errorMessage);
       
     } finally {

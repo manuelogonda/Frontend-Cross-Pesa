@@ -104,6 +104,15 @@ apiClient.interceptors.response.use(
       } finally {
         isRefreshing = false;
       }
+      
+    }
+   else if (error.message === 'Network Error' && !error.response) {
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+        console.warn("API triggered a CORS error (likely an unwanted 302 redirect). Nuking session.");
+        const { logout } = useAuthStore.getState();
+        logout();
+        window.location.replace('/login');
+      }
     }
 
     return Promise.reject(error);

@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
 import { ProtectedRoute } from "../components/layout/ProtectedRoute";
@@ -9,65 +9,56 @@ import { WalletDashboardPage } from "../features/wallet/pages/WalletDashboardPag
 import { DashboardLayout } from "../components/layout/DashboardLayout";
 import { TopUpPage } from "../features/wallet/pages/TopUpPage";
 import { HomePage } from "../pages/HomePage";
-import { ExchangeForm } from "../features/transfer/components/ExchngeFrom";
 import { CreateWalletPage } from "../features/wallet/pages/CreateWalletPage";
 import { AdminDashboardPage } from "../features/admin/pages/AdminDashboardPage";
 import { AdminUsersPage } from "../features/admin/pages/AdminUserpage";
 import { VerifyTopUpPage } from "../features/wallet/pages/VerifyTopUpPage";
 import { KycSubmissionPage } from "../features/kyc/pages/KycSubmissionPage";
 import { KycAdminDashboard } from "../features/kyc/pages/KycAdminDashboard";
+import { AdminProtectedRoute } from "../components/layout/AdminProtectedRoute";
+import { AdminLayout } from "../components/layout/AdminLayout";
+import { AdminTreasuryPage } from "../features/admin/pages/AdminTreasuryPage";
 
 export const router = createBrowserRouter([
+  // --- Public Routes ---
+  { path: '/', element: <HomePage /> },
+  { path: '/login', element: <LoginPage /> },
+  { path: '/register', element: <RegisterPage /> },
+  { path: '/oauth2/redirect', element: <OAuth2RedirectHandler /> },
+  { path: "/wallet/verify-topup", element: <VerifyTopUpPage /> },
+
+  // --- RETAIL USER ROUTES ---
   {
-    path: '/',
-    element: <Navigate to="/dashboard" replace />, // Redirect root to dashboard
-  },
-  {
-    path: '/login',
-    element: <LoginPage />,
-  },
-  {
-    path: '/register',
-    element: <RegisterPage />,
-  },
-  {
-    path: '/home',
-    element: <HomePage />,
-  },
-  {
-    path: '/oauth2/redirect',
-    element: <OAuth2RedirectHandler />, // Catches the Google login redirect
-  },
-  { path: '/admin-dashboard', 
-    element: <AdminDashboardPage /> 
-  },
-  { path: '/admin-users', 
-    element: <AdminUsersPage /> 
-  },
-  {
-    path: '/admin-kyc',
-    element: <KycAdminDashboard />
-  },
-  {
-    path: "/wallet/verify-topup",
-    element: <VerifyTopUpPage />
-  },
-  {
-    element: <ProtectedRoute />, 
+    element: <ProtectedRoute />, // Validates standard JWT
     children: [
       {
-        element: <DashboardLayout />, // Wrap protected routes in the layout
+        element: <DashboardLayout />, // Clean retail-only layout
         children: [
           { path: '/dashboard', element: <WalletDashboardPage /> },
           { path: '/transfer', element: <TransferForm /> },
           { path: '/topup', element: <TopUpPage /> },
-          { path: '/wallets', element: <CreateWalletPage /> },
-          { path: '/exchange', element: <ExchangeForm />},
+          { path: '/create-wallet', element: <CreateWalletPage /> },
           { path: '/beneficiaries', element: <BeneficiaryPage /> },
           { path: '/kyc-submission', element: <KycSubmissionPage /> }
         ],
       },
     ],
+  },
+
+  // --- ADMIN ROUTES ---
+  {
+    element: <AdminProtectedRoute />, // Strictly validates ROLE_ADMIN
+    children: [
+      {
+        element: <AdminLayout />, // Dedicated admin shell
+        children: [
+          { path: '/admin-dashboard', element: <AdminDashboardPage /> },
+          { path: '/admin-users', element: <AdminUsersPage /> },
+          { path: '/admin-kyc', element: <KycAdminDashboard /> },
+          { path: '/admin-transactions', element: <AdminTreasuryPage /> }
+        ]
+      }
+    ]
   },
 
   // Global 404 Catch-all
@@ -80,5 +71,4 @@ export const router = createBrowserRouter([
       </div>
     )
   }
- 
 ]);
