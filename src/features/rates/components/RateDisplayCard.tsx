@@ -1,11 +1,5 @@
 import { useLiveQuote } from "../hooks/useRatesHook";
 
-interface RateDisplayCardProps {
-  sourceCurrency: string;
-  destinationCurrency: string;
-  amountToConvert?: number;
-}
-
 export const RateDisplayCard: React.FC<RateDisplayCardProps> = ({
   sourceCurrency,
   destinationCurrency,
@@ -39,8 +33,10 @@ export const RateDisplayCard: React.FC<RateDisplayCardProps> = ({
 
   if (!quote) return null;
 
-  const convertedTotal = (amountToConvert * quote.exchangeRate).toFixed(2);
-  const formattedRate = quote.exchangeRate.toFixed(4);
+  // Safely coerce exchangeRate to a number to prevent runtime .toFixed() crashes
+  const rateValue = Number(quote.exchangeRate);
+  const convertedTotal = (amountToConvert * rateValue).toFixed(2);
+  const formattedRate = rateValue.toFixed(4);
 
   return (
     <div className="bg-indigo-50 p-4 rounded-lg shadow-md mt-4">

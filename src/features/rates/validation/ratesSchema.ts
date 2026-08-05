@@ -10,13 +10,16 @@ export const fxQuoteRequestSchema = z.object({
     .toUpperCase(),
 });
 
-// Matches the FxRateResponse DTO from Spring Boot
+// Matches the FxRateResponse Java DTO precisely
 export const fxQuoteResponseSchema = z.object({
-  quoteId: z.string().uuid(), // FIXED: Zod syntax is string().uuid()
   sourceCurrency: z.string().length(3),
   destinationCurrency: z.string().length(3),
-  exchangeRate: z.number().positive(),
-  expiresAt: z.iso.datetime(), // FIXED: Zod syntax for ISO 8601 strings
+  // Use z.union([z.number(), z.string().transform(Number)]) to gracefully handle 
+  // both JSON number or Jackson string-serialized BigDecimals
+  exchangeRate: z.union([z.number(), z.string().transform(Number)]).refine((val) => val > 0, {
+    message: "Exchange rate must be positive",
+  }),
+  expiresAt: z.string().datetime(), // Correct Zod syntax for ISO 8601 strings
 });
 
 export type FxQuoteRequest = z.infer<typeof fxQuoteRequestSchema>;

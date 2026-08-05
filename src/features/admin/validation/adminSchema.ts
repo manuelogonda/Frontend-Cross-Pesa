@@ -43,7 +43,7 @@ export const EntryClassSchema = z.enum([
 // ==========================================
 // 2. USER MANAGEMENT & KYC SCHEMAS
 // ==========================================
-
+export const UserStatusSchema = z.enum(["ACTIVE", "INACTIVE", "SUSPENDED", "PENDING"]);
 export const AdminUserSchema = z.object({
   id: z.string().uuid(),
   firstName: z.string(),
@@ -52,7 +52,7 @@ export const AdminUserSchema = z.object({
   phoneNumber: z.string().nullable(),
   idType: z.string().nullable(),
   idNumber: z.string().nullable(),
-  status: WalletStatusSchema,
+  status: UserStatusSchema,
   kycStatus: KycStatusSchema,
   kycLevel: z.number().int().min(0),
   createdAt: z.string(),
@@ -92,11 +92,11 @@ export const TreasuryRebalanceSchema = z.object({
 // ==========================================
 
 export const AdminTransactionSchema = z.object({
-  id: z.string().uuid(),
-  senderId: z.string().uuid(),
-  sourceWalletId: z.string().uuid(),
-  beneficiaryId: z.string().uuid().nullable(),
-  destinationWalletId: z.string().uuid().nullable(),
+  transactionId: z.string().uuid(),
+  senderName: z.string(),
+  senderEmail: z.string().email(),
+  beneficiaryName: z.string(),
+  beneficiaryAccount: z.string(),
   
   sourceCurrency: CurrencySchema,
   destinationCurrency: CurrencySchema,
@@ -104,17 +104,15 @@ export const AdminTransactionSchema = z.object({
   // Ledger Amounts
   grossAmount: z.number(),
   netAmount: z.number(),
+  destinationAmount: z.number(),
+  exchangeRate: z.number(),
+  usdNormalizationRate: z.number(),
   markupFee: z.number(),
   routingFee: z.number(),
   totalFee: z.number(),
-  amountReceived: z.number(),
   
-  // FX Audit Trail
-  fxRateApplied: z.number(),
-  usdNormalizationRate: z.number(),
-  
-  reference: z.string(),
   status: TransactionStatusSchema,
+  gatewayReference: z.string().nullable().optional(),
   createdAt: z.string(),
 });
 
@@ -144,15 +142,6 @@ export const DashboardMetricsSchema = z.object({
   totalUsers: z.number().optional(),
 });
 
-
-// export const createPaginatedSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
-//   z.object({
-//     content: z.array(itemSchema),
-//     totalPages: z.number(),
-//     totalElements: z.number(),
-//     size: z.number(),
-//     number: z.number(), // Current page index (0-based)
-//   }).loose();
 
 export const createPaginatedSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
   z.object({

@@ -1,9 +1,14 @@
 import { ArrowDownLeft, ArrowRight, ArrowUpRight } from "lucide-react";
 import { LedgerService } from "../services/LedgerService";
+import type { FormattedLedgerEntry } from "../types";
+
+interface LedgerEntryRowProps {
+  entry: FormattedLedgerEntry;
+}
 
 export const LedgerEntryRow: React.FC<LedgerEntryRowProps> = ({ entry }) => {
   const isCredit = entry.direction === 'CREDIT';
-  const isNeutral = entry.direction === 'NEUTRAL'; // Handles 0-value audit entries if any
+  const isNeutral = entry.direction === 'NEUTRAL';
   const classMeta = LedgerService.formatEntryClass(entry.entryClass);
 
   return (
@@ -24,10 +29,10 @@ export const LedgerEntryRow: React.FC<LedgerEntryRowProps> = ({ entry }) => {
         </span>
       </td>
 
-      {/* Direction & Amount */}
+      {/* Direction & Formatted Amount */}
       <td className="p-4 whitespace-nowrap">
         <div className={`flex items-center gap-1.5 font-bold ${
-          isCredit ? 'text-emerald-600' : isNeutral ? 'text-slate-500' : 'text-slate-800'
+          isCredit ? 'text-emerald-600' : isNeutral ? 'text-slate-500' : 'text-rose-600'
         }`}>
           {isCredit ? <ArrowDownLeft size={16} /> : isNeutral ? <ArrowRight size={16} /> : <ArrowUpRight size={16} />}
           <span>{entry.formattedAmount}</span>

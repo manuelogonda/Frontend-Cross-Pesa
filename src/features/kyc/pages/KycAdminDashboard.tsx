@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useKyc } from "../hooks/useKyc";
 import type { KycResponse, PaginatedResponse } from "../services/KycService";
-import { CheckCircle, XCircle } from "lucide-react";
+import { Camera, CheckCircle, FileText, XCircle } from "lucide-react";
 
 export const KycAdminDashboard = () => {
   const { getAdminQueue, processReview, isLoading } = useKyc();
@@ -51,6 +51,7 @@ export const KycAdminDashboard = () => {
               <th className="p-4">Document</th>
               <th className="p-4">Status</th>
               <th className="p-4">Date</th>
+              <th className="p-4">Verification Assets</th> {/* Added missing header for alignment */}
               <th className="p-4 rounded-tr-lg">Actions</th>
             </tr>
           </thead>
@@ -68,18 +69,59 @@ export const KycAdminDashboard = () => {
                   </span>
                 </td>
                 <td className="p-4 text-slate-500">{new Date(sub.createdAt).toLocaleDateString()}</td>
-                <td className="p-4 flex gap-2">
+
+                {/* CLOUDINARY IMAGE REVIEW LINKS */}
+                <td className="p-4">
+                  <div className="flex gap-2 text-xs">
+                    {sub.idImageUrl ? (
+                      <a 
+                        href={sub.idImageUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:underline font-medium flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded border border-indigo-100"
+                      >
+                        <FileText size={14} />
+                        <span>Document</span>
+                      </a>
+                    ) : (
+                      <span className="text-slate-400 text-xs italic">No ID</span>
+                    )}
+
+                    {sub.selfieImageUrl ? (
+                      <a 
+                        href={sub.selfieImageUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:underline font-medium flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded border border-indigo-100"
+                      >
+                        <Camera size={14} />
+                        <span>Selfie</span>
+                      </a>
+                    ) : (
+                      <span className="text-slate-400 text-xs italic">No Selfie</span>
+                    )}
+                  </div>
+                </td>
+
+                <td className="p-4 flex gap-2 items-center">
                   {sub.status === 'PENDING' && (
                     <>
-                      <button onClick={() => handleAction(sub.id, 'APPROVED')} className="p-2 text-green-600 hover:bg-green-50 rounded">
+                      <button 
+                        onClick={() => handleAction(sub.id, 'APPROVED')} 
+                        className="p-2 text-green-600 hover:bg-green-50 rounded transition flex items-center gap-1 text-xs font-semibold"
+                        title="Approve"
+                      >
                         <CheckCircle size={18} />
                       </button>
-                      <button onClick={() => handleAction(sub.id, 'REJECTED')} className="p-2 text-red-600 hover:bg-red-50 rounded">
+                      <button 
+                        onClick={() => handleAction(sub.id, 'REJECTED')} 
+                        className="p-2 text-red-600 hover:bg-red-50 rounded transition flex items-center gap-1 text-xs font-semibold"
+                        title="Reject"
+                      >
                         <XCircle size={18} />
                       </button>
                     </>
                   )}
-                  {/* You can add an "Open Images" button here that links to sub.idImageUrl */}
                 </td>
               </tr>
             ))}

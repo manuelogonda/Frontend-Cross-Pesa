@@ -1,9 +1,11 @@
 import { AlertOctagon, ShieldCheck, Snowflake } from "lucide-react";
 import type { Wallet } from "../validation/walletShema";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface WalletCardProps {
   wallet: Wallet;
 }
+
 
 export const WalletCard: React.FC<WalletCardProps> = ({ wallet }) => {
   

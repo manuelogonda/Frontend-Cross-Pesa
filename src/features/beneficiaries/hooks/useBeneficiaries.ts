@@ -68,6 +68,7 @@ export const useBeneficiaries = () => {
     isLoading, 
     error, 
     load, 
+    refetch: load,
     add, 
     update, 
     remove 

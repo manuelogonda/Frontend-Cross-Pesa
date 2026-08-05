@@ -145,71 +145,69 @@ export const AdminDashboardPage = () => {
               ) : transactions.length === 0 ? (
                 <tr><td colSpan={7} className="p-8 text-center text-slate-500">No transactions recorded.</td></tr>
               ) : (
-                transactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-slate-50 transition-colors">
-                    {/* Ref & Time */}
-                    <td className="p-4">
-                      <p className="font-mono text-xs text-slate-700 font-bold truncate max-w-[130px]" title={tx.reference}>
-                        {tx.reference || 'N/A'}
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        {new Date(tx.createdAt).toLocaleDateString()} {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </td>
+                    transactions.map((tx) => (
+            <tr key={tx.transactionId} className="hover:bg-slate-50 transition-colors">
+              {/* Ref & Time */}
+              <td className="p-4">
+                <p className="font-mono text-xs text-slate-700 font-bold truncate max-w-[130px]" title={tx.gatewayReference}>
+                  {tx.gatewayReference || 'N/A'}
+                </p>
+                <p className="text-xs text-slate-400">
+                  {new Date(tx.createdAt).toLocaleDateString()} {new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </td>
 
-                    {/* Sender */}
-                    <td className="p-4">
-                      <p className="font-mono text-slate-600 text-xs truncate max-w-[100px]">{tx.senderId.split('-')[0]}...</p>
-                      <span className="inline-block mt-1 px-1.5 py-0.5 text-[10px] font-semibold border rounded-md bg-blue-50 text-blue-700 border-blue-200">
-                        USER_RETAIL
-                      </span>
-                    </td>
+              {/* Sender */}
+              <td className="p-4">
+                <p className="font-medium text-slate-700 text-xs truncate max-w-[120px]">{tx.senderName}</p>
+                <p className="text-[10px] text-slate-400 truncate max-w-[120px]">{tx.senderEmail}</p>
+              </td>
 
-                    {/* DEBIT (-) COLUMN */}
-                    <td className="p-4">
-                      <div className="flex items-center gap-1.5 text-red-600 font-bold">
-                        <ArrowUpRight size={16} />
-                        <span>-{tx.grossAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })} {tx.sourceCurrency}</span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 pl-5">Gross Amount Debited</p>
-                    </td>
+              {/* DEBIT (-) COLUMN */}
+              <td className="p-4">
+                <div className="flex items-center gap-1.5 text-red-600 font-bold">
+                  <ArrowUpRight size={16} />
+                  <span>-{tx.grossAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })} {tx.sourceCurrency}</span>
+                </div>
+                <p className="text-[10px] text-slate-400 pl-5">Net: {tx.netAmount?.toFixed(2)}</p>
+              </td>
 
-                    {/* CREDIT (+) COLUMN */}
-                    <td className="p-4">
-                      <div className="flex items-center gap-1.5 text-emerald-600 font-bold">
-                        <ArrowDownLeft size={16} />
-                        <span>+{tx.amountReceived?.toLocaleString(undefined, { minimumFractionDigits: 2 })} {tx.destinationCurrency}</span>
-                      </div>
-                      <p className="text-[10px] text-slate-500 font-medium">
-                        To: {tx.beneficiaryId ? 'External Beneficiary' : 'Internal Wallet'}
-                      </p>
-                    </td>
+              {/* CREDIT (+) COLUMN */}
+              <td className="p-4">
+                <div className="flex items-center gap-1.5 text-emerald-600 font-bold">
+                  <ArrowDownLeft size={16} />
+                  <span>+{tx.destinationAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })} {tx.destinationCurrency}</span>
+                </div>
+                <p className="text-[10px] text-slate-500 font-medium truncate max-w-[120px]" title={tx.beneficiaryName}>
+                  To: {tx.beneficiaryName}
+                </p>
+              </td>
 
-                    {/* SYSTEM LEDGER REVENUE CREDIT */}
-                    <td className="p-4">
-                      <div className="flex items-center gap-1.5 text-indigo-700 font-semibold text-xs">
-                        <Building2 size={14} />
-                        <span>+{(tx.markupFee || 0).toFixed(2)} (Markup)</span>
-                      </div>
-                      <p className="text-[10px] text-slate-400 pl-5">
-                        Route Fee: +{(tx.routingFee || 0).toFixed(2)}
-                      </p>
-                    </td>
+              {/* SYSTEM LEDGER REVENUE CREDIT */}
+              <td className="p-4">
+                <div className="flex items-center gap-1.5 text-indigo-700 font-semibold text-xs">
+                  <Building2 size={14} />
+                  <span>+{(tx.markupFee || 0).toFixed(2)} (Markup)</span>
+                </div>
+                <p className="text-[10px] text-slate-400 pl-5">
+                  Route Fee: +{(tx.routingFee || 0).toFixed(2)} | Total: +{(tx.totalFee || 0).toFixed(2)}
+                </p>
+              </td>
 
-                    {/* FX Rates */}
-                    <td className="p-4 text-xs font-mono text-slate-600">
-                      <p>FX: {tx.fxRateApplied?.toFixed(4)}</p>
-                      <p className="text-slate-400">USD Norm: {tx.usdNormalizationRate?.toFixed(4)}</p>
-                    </td>
+              {/* FX Rates */}
+              <td className="p-4 text-xs font-mono text-slate-600">
+                <p>FX: {tx.exchangeRate?.toFixed(4)}</p>
+                <p className="text-slate-400">USD Norm: {tx.usdNormalizationRate?.toFixed(4)}</p>
+              </td>
 
-                    {/* Status */}
-                    <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusBadge(tx.status)}`}>
-                        {tx.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))
+              {/* Status */}
+              <td className="p-4">
+                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusBadge(tx.status)}`}>
+                  {tx.status}
+                </span>
+              </td>
+            </tr>
+          ))
               )}
             </tbody>
           </table>

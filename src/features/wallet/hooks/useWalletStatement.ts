@@ -27,7 +27,8 @@ export const useWalletStatement = (initialSize: number = 10) => {
       setTotalElements(data.totalElements);
     } catch (err: any) {
       if (err instanceof ZodError) {
-        console.error("Statement Schema Validation Error:", err.errors);
+        // Use err.issues or err.flatten() instead of err.errors
+        console.error("Statement Schema Validation Error:", err.issues || err.flatten());
         setError("Received invalid ledger data format from the server.");
       } else {
         const message = err.response?.data?.message || 'Failed to fetch wallet statement. Please check your connection.';

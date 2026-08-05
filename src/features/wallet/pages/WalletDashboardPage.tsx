@@ -4,22 +4,30 @@ import { WalletCard } from "../components/WalletCard";
 import { useNavigate } from "react-router-dom";
 import { useWalletStatement } from "../hooks/useWalletStatement";
 import { LedgerTable } from "../../ledger/components/LedgerTable";
+import { useEffect } from "react";
 
 export const WalletDashboardPage = () => {
   const navigate = useNavigate();
   
-  // 1. Destructure the single 'wallet' object
-  const { wallet, isLoading: isLoadingWallet, error: walletError } = useWallets();
+  // 1. Destructure wallet data and refetch handler
+  const { wallet, isLoading: isLoadingWallet, error: walletError, refetch: refetchWallet } = useWallets();
   
-  // 2. Fetch the paginated double-entry statement (No ID required, perfectly secure)
+  // 2. Destructure ledger statement data, pagination handlers, and refetch handler
   const { 
     entries, 
     pagination, 
     isLoading: isLoadingLedger, 
     error: ledgerError,
     nextPage,
-    prevPage 
+    prevPage,
+    refetch: refetchLedger
   } = useWalletStatement(5); // Show 5 entries per page for a cleaner dashboard view
+
+  // 3. Force fresh data synchronization whenever the dashboard mounts
+  useEffect(() => {
+    refetchWallet();
+    refetchLedger();
+  }, [refetchWallet, refetchLedger]);
 
   if (isLoadingWallet) {
     return (
@@ -42,7 +50,7 @@ export const WalletDashboardPage = () => {
     );
   }
 
-  // 3. EMPTY STATE: If the user hasn't created a wallet, prompt them to do so
+  // 4. EMPTY STATE: If the user hasn't created a wallet, prompt them to do so
   if (!wallet) {
     return (
       <div className="max-w-3xl mx-auto p-8 mt-12 text-center bg-white rounded-2xl shadow-sm border border-slate-200 animate-in fade-in zoom-in duration-300">
@@ -61,7 +69,7 @@ export const WalletDashboardPage = () => {
     );
   }
 
-  // 4. MAIN DASHBOARD
+  // 5. MAIN DASHBOARD
   return (
     <div className="max-w-6xl mx-auto p-8 space-y-8 animate-in fade-in duration-500">
       

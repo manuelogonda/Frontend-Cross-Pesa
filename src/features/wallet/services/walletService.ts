@@ -1,6 +1,7 @@
 import z from "zod";
 import { WalletSchema, type TopUpFormData, type Wallet } from "../validation/walletShema";
 import { apiClient } from "../../../lib/axios";
+import { ledgerEntrySchema, type PaginatedLedgerResponse } from "../../ledger/types";
 
 export interface TopUpResponse {
   message: string;
@@ -10,6 +11,12 @@ export interface TopUpResponse {
 export interface VerificationResponse {
   message: string;
   status: 'SUCCESS' | 'FAILED';
+}
+
+export interface SpendFormData {
+  currency: string;
+  amount: number;
+  description: string;
 }
 
 // Ledger Statement Schemas (Aligned with LedgerEntryResponse.java)
@@ -96,14 +103,31 @@ export const verifyWalletTopUp = async (params: {
  * Fetches the user's paginated, immutable double-entry ledger statement.
  * SECURE: No walletId passed in the URL. The backend derives it from the JWT token.
  */
+
 export const getWalletStatement = async (
-  page: number = 0, 
-  size: number = 15
-): Promise<PaginatedUserStatement> => {
+  page: number = 0,
+  size: number = 10
+): Promise<PaginatedLedgerResponse> => {
   const { data } = await apiClient.get('/ledgers/statement', {
     params: { page, size }
   });
-  
-  // Strictly enforce the schema so the UI doesn't crash if backend drops a field
-  return PaginatedUserStatementSchema.parse(data);
+ 
+
+  // 1. Safely parse ONLY the content array so individual rows are validated by Zod
+  const rawContent = Array.isArray(data) ? data : (data?.content || []);
+  const parsedContent = z.array(ledgerEntrySchema).parse(rawContent);
+
+  // 2. Safely extract pagination metadata from either flat or nested Spring formats without throwing errors
+  const totalPages = data?.totalPages ?? data?.page?.totalPages ?? 1;
+  const totalElements = data?.totalElements ?? data?.page?.totalElements ?? parsedContent.length;
+  const pageSize = data?.size ?? data?.page?.size ?? size;
+  const pageNumber = data?.number ?? data?.page?.number ?? page;
+
+  return {
+    content: parsedContent,
+    totalPages,
+    totalElements,
+    size: pageSize,
+    number: pageNumber,
+  };
 };

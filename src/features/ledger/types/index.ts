@@ -1,36 +1,55 @@
 import { z } from 'zod';
 
-export const LedgerEntryResponseSchema = z.object({
+export const ledgerEntrySchema = z.object({
   id: z.string().uuid(),
-  transactionId: z.string().uuid().nullable(),
-  walletId: z.string().uuid().nullable(),
-  entryClass: z.string(), // E.g., 'PRINCIPAL_TRANSFER', 'MARKUP_FEE', 'ROUTING_FEE', 'FX_CLEARING', 'DEPOSIT'
+  transactionId: z.string().uuid().nullable().optional(),
+  walletId: z.string().uuid().nullable().optional(),
+  entryClass: z.string(),
   debit: z.number(),
   credit: z.number(),
-  amount: z.number(),     // The net impact (credit - debit) calculated by PostgreSQL
-  currency: z.string().length(3),
-  balanceAfter: z.number(),
+  amount: z.number(),
+  balanceAfter: z.number().nullable().optional().transform((val) => val ?? 0),
+  currency: z.string(),
   description: z.string(),
   createdAt: z.string(),
 });
 
-export const PaginatedLedgerResponseSchema = z.object({
-  content: z.array(LedgerEntryResponseSchema),
-  totalPages: z.number(),
-  totalElements: z.number(),
-  size: z.number(),
-  number: z.number(), // 0-indexed page number from Spring Data
-});
+// Spring Boot / PagedModel nested format
+export const ledgerStatementResponseSchema = z.object({
+  content: z.array(ledgerEntrySchema),
+  page: z.object({
+    size: z.number(),
+    totalElements: z.number(),
+    totalPages: z.number(),
+    number: z.number(),
+  }).optional(),
+  // Fallback for flat pagination structures if configured differently
+  totalPages: z.number().optional(),
+  totalElements: z.number().optional(),
+  size: z.number().optional(),
+  number: z.number().optional(),
+}).transform((val) => ({
+  content: val.content,
+  totalPages: val.page?.totalPages ?? val.totalPages ?? 1,
+  totalElements: val.page?.totalElements ?? val.totalElements ?? val.content.length,
+  size: val.page?.size ?? val.size ?? 10,
+  number: val.page?.number ?? val.number ?? 0,
+}));
 
-export type LedgerEntryResponse = z.infer<typeof LedgerEntryResponseSchema>;
-export type PaginatedLedgerResponse = z.infer<typeof PaginatedLedgerResponseSchema>;
+export type LedgerEntry = z.infer<typeof ledgerEntrySchema>;
+export type LedgerStatementResponse = z.infer<typeof ledgerStatementResponseSchema>;
 
-// Helper UI Type to derive entry direction quickly for the table
+export const LedgerEntryResponseSchema = ledgerEntrySchema;
+export const PaginatedLedgerResponseSchema = ledgerStatementResponseSchema;
+
+export type LedgerEntryResponse = LedgerEntry;
+export type PaginatedLedgerResponse = LedgerStatementResponse;
+
 export type LedgerDirection = 'DEBIT' | 'CREDIT' | 'NEUTRAL';
 
 export interface FormattedLedgerEntry extends LedgerEntryResponse {
   direction: LedgerDirection;
   formattedAmount: string;
   formattedBalance: string;
-  badgeColor: string; // E.g., 'bg-red-100 text-red-700' for Debits
+  badgeColor: string;
 }
