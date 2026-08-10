@@ -3,11 +3,6 @@ import type { DashboardMetrics, PaginatedAdminTransactions } from "../validation
 import { fetchAdminTransactionsApi, fetchMetricsApi } from "../api/adminApi";
 import { ZodError } from "zod";
 
-interface PaginationState {
-  currentPage: number;
-  totalPages: number;
-  totalElements: number;
-}
 
 export const useAdminDashboard = () => {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
@@ -34,7 +29,7 @@ export const useAdminDashboard = () => {
       setTransactionsData(txData);
     } catch (err: any) {
       if (err instanceof ZodError) {
-        console.error("Schema Validation Error:", err.errors);
+        console.error("Schema Validation Error:", err.issues);
         setError("Received invalid data format from the server.");
       } else {
         setError(err.response?.data?.message || err.message || "Failed to load dashboard data");

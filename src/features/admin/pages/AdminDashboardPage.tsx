@@ -149,7 +149,7 @@ export const AdminDashboardPage = () => {
             <tr key={tx.transactionId} className="hover:bg-slate-50 transition-colors">
               {/* Ref & Time */}
               <td className="p-4">
-                <p className="font-mono text-xs text-slate-700 font-bold truncate max-w-[130px]" title={tx.gatewayReference}>
+                <p className="font-mono text-xs text-slate-700 font-bold truncate max-w-32.5" title={tx.gatewayReference || undefined}>
                   {tx.gatewayReference || 'N/A'}
                 </p>
                 <p className="text-xs text-slate-400">
@@ -159,8 +159,8 @@ export const AdminDashboardPage = () => {
 
               {/* Sender */}
               <td className="p-4">
-                <p className="font-medium text-slate-700 text-xs truncate max-w-[120px]">{tx.senderName}</p>
-                <p className="text-[10px] text-slate-400 truncate max-w-[120px]">{tx.senderEmail}</p>
+                <p className="font-medium text-slate-700 text-xs truncate max-w-30">{tx.senderName}</p>
+                <p className="text-[10px] text-slate-400 truncate max-w-30">{tx.senderEmail}</p>
               </td>
 
               {/* DEBIT (-) COLUMN */}
@@ -178,7 +178,7 @@ export const AdminDashboardPage = () => {
                   <ArrowDownLeft size={16} />
                   <span>+{tx.destinationAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })} {tx.destinationCurrency}</span>
                 </div>
-                <p className="text-[10px] text-slate-500 font-medium truncate max-w-[120px]" title={tx.beneficiaryName}>
+                <p className="text-[10px] text-slate-500 font-medium truncate max-w-30" title={tx.beneficiaryName}>
                   To: {tx.beneficiaryName}
                 </p>
               </td>
