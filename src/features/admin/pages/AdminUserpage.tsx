@@ -140,7 +140,7 @@ export const AdminUsersPage = () => {
                           <FileSignature size={16} />
                         </button>
                         <button 
-                          onClick={() => handleStatusChange(user.id, user.status)}
+                          onClick={() => handleStatusChange(user.id, user.status as any)}
                           className={`p-1.5 rounded transition-colors ${user.status === 'ACTIVE' ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`} 
                           title={user.status === 'ACTIVE' ? 'Suspend User Wallet' : 'Activate User Wallet'}
                         >

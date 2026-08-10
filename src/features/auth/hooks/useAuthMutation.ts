@@ -9,10 +9,13 @@ export const useLogin = () => {
 
   return useMutation({
     mutationFn: authService.login,
-    onSuccess: (data) => {
-      // 1. Save token and user details to Zustand
-      loginToStore(data);
-      // 2. Send the user to the protected dashboard
+    onSuccess: (data: any) => {
+      // Map response fields to match Zustand store expectations
+      loginToStore({
+        user: data.user,
+        accessToken: data.accessToken || data.token,
+        refreshToken: data.refreshToken,
+      });
       navigate('/dashboard');
     },
   });
@@ -24,9 +27,12 @@ export const useRegister = () => {
 
   return useMutation({
     mutationFn: authService.register,
-    onSuccess: (data) => {
-      // Auto-login the user after successful registration
-      loginToStore(data);
+    onSuccess: (data: any) => {
+      loginToStore({
+        user: data.user,
+        accessToken: data.accessToken || data.token,
+        refreshToken: data.refreshToken,
+      });
       navigate('/dashboard');
     },
   });
