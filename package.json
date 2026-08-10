@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
+
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -38,4 +39,5 @@
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12"
   }
+  
 }
