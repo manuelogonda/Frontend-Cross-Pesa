@@ -2,7 +2,7 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { useAuthStore } from '../store/authStore';
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL_LIVE || import.meta.env.VITE_API_BASE_URL_DEV ,
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -76,7 +76,7 @@ apiClient.interceptors.response.use(
 
       try {
         // Use a pristine axios instance to avoid interceptor loops
-        const response = await axios.post('http://localhost:8080/api/v1/auth/refresh-token', null, {
+        const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1/auth/refresh-token'}`, null, {
           headers: {
             Authorization: `Bearer ${refreshToken}`,
           },
