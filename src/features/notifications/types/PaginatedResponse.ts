@@ -7,3 +7,11 @@ export interface PaginatedResponse<T> {
     totalPages: number;
   };
 }
+
+export interface AppNotification {
+  id: string; 
+  title: string;
+  message: string;
+  status?: string; 
+  createdAt: string;
+}

@@ -27,7 +27,7 @@ export const useLedgerStatement = (initialPageSize: number = 10) => {
       setTotalElements(rawResponse.totalElements);
     } catch (err: any) {
       if (err instanceof ZodError) {
-        console.error('Ledger Schema Validation Error:', err.errors);
+        console.error('Ledger Schema Validation Error:', err.issues);
         setError('Server returned an unexpected ledger data structure.');
       } else {
         setError(err.response?.data?.message || 'Failed to fetch ledger statement.');

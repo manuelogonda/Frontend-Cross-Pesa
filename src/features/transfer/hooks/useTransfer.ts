@@ -29,7 +29,7 @@ export const useTransfer = () => {
       return response;
     } catch (err: any) {
       if (err instanceof ZodError) {
-        console.error("Transaction Schema Validation Error:", err.errors);
+        console.error("Transaction Schema Validation Error:", err.issues);
         setError("Received an invalid response format from the server.");
       } else {
         const message = err.response?.data?.message || err.message || "Transfer failed due to a network error.";

@@ -30,22 +30,18 @@ export const WalletSchema = z.object({
 // 3. CREATE WALLET SCHEMA (Onboarding Form)
 // ==========================================
 export const CreateWalletSchema = z.object({
-  currency: z.enum(Currencies, {
-    errorMap: () => ({ message: "Please select a valid base currency" })
-  })
+  currency: z.enum(Currencies, { message: "Currency is required" }),
 });
 
 // ==========================================
 // 4. TOP-UP SCHEMA (Flutterwave Form)
 // ==========================================
 export const TopUpSchema = z.object({
-  currency: z.enum(Currencies, {
-    errorMap: () => ({ message: "Please select a valid currency" })
-  }),
+  currency: z.enum(Currencies, "Please select a valid currency"),
   // We keep .coerce.number() here because HTML <input type="number"> 
   // natively returns string values to React state.
   amount: z.coerce
-    .number({ invalid_type_error: "Amount must be a valid number" })
+    .number({ message:"Amount must be a valid number" })
     .positive({ message: "Amount must be greater than zero" })
     .min(1.00, { message: "Minimum top-up is 1.00" }) // Adjusted for realistic minimums
 });
@@ -61,4 +57,7 @@ export type Currency = z.infer<typeof CurrencyEnumSchema>;
 
 export type Wallet = z.infer<typeof WalletSchema>;
 export type CreateWalletFormData = z.infer<typeof CreateWalletSchema>;
+// Input type: pre-coercion values (amount is `unknown`). Used by useForm's resolver generic.
+export type TopUpFormValues = z.input<typeof TopUpSchema>;
+// Output type: post-validation values (amount is `number`).
 export type TopUpFormData = z.infer<typeof TopUpSchema>;

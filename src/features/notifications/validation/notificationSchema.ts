@@ -6,10 +6,10 @@ export const NotificationSchema = z.object({
   message: z.string(),
   notificationType: z.enum(['EMAIL', 'SMS', 'IN_APP']),
   status: z.enum(['UNREAD', 'READ', 'ARCHIVED']),
-  metadata: z.record(z.any()).nullable().optional(),
+  metadata: z.record(z.string(), z.any()).nullable().optional(),
   createdAt: z.string(), // ISO date string
 });
 
 // Infer the TypeScript type from the Zod schema
-export type Notification = z.infer<typeof NotificationSchema>;
+export type AppNotification = z.infer<typeof NotificationSchema>;
 

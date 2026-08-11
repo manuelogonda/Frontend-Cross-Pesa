@@ -17,11 +17,18 @@ export interface Wallet {
 }
 
 export interface Beneficiary {
-  id: string;
+  id?: string;
   firstName: string;
   lastName: string;
-  payoutProvider: string;
+  beneficiaryType: "INDIVIDUAL" | "ORGANIZATION" | "BUSINESS";
+  email: string;
+  phoneNumber: string;
+  countryCode: string;
+  city?: string;
+  payoutMethod: "BANK_TRANSFER" | "MOBILE_MONEY" | "CARD_PAYMENT";
+  payoutProvider: "MPESA" | "EQUITY_BANK" | "VISA" | "MASTERCARD";
   accountNumber: string;
+  accountCurrency: "KES" | "USD" | "CNY" | "JPY" | "GBP" | "CAD" | "AUD" | "PKR" | "AED" | "SAR" | "EUR" | "SEK";
 }
 
 export interface FxQuote {
@@ -44,11 +51,17 @@ export interface TransactionRequest {
 
 export interface TransactionResponse {
   id: string;
-  gatewayReference: string;
-  status: string;
-  sourceAmount: number;
-  destinationAmount: number;
-  transferFee: number;
-  fxRateApplied: number;
+  reference: string;
+  status: "FAILED" | "PENDING" | "PROCESSING" | "COMPLETED" | "FLAGGED";
+  grossAmount: number;
+  amountReceived: number;
+  sourceCurrency: string;
+  destinationCurrency: string;
+  exchangeRate: number;
   createdAt: string;
+  gatewayReference?: string;
+  sourceAmount?: number;
+  destinationAmount?: number;
+  transferFee?: number;
+  fxRateApplied?: number;
 }

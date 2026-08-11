@@ -23,7 +23,7 @@ export const KycAdminDashboard = () => {
     const reason = action === 'REJECTED' ? prompt("Rejection Reason:") : undefined;
     if (action === 'REJECTED' && !reason) return; // Cancelled
     
-    await processReview(id, action, reason);
+    await processReview(id, action, reason ?? undefined);
     fetchPage(page, statusFilter); // Refresh data
   };
 

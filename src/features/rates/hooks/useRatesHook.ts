@@ -45,7 +45,7 @@ export const useLiveQuote = (
           setQuote(null);
           
           if (err instanceof ZodError) {
-            console.error('FX Quote schema validation failed:', err.errors);
+            console.error('FX Quote schema validation failed:', err.issues);
             setError('Received invalid rate payload from server.');
           } else if (typeof err === 'object' && err !== null && 'response' in err) {
             const axiosErr = err as { response?: { data?: { message?: string } } };

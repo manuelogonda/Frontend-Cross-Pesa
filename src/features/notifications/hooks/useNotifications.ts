@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { fetchNotificationsApi, markNotificationAsReadApi } from "../api/notificationsApi";
+import type { AppNotification } from "../validation/notificationSchema";
 
 export const useNotifications = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -12,7 +13,7 @@ export const useNotifications = () => {
       const data = await fetchNotificationsApi();
       
       // Safely extract the array, whether it comes back as paginated (.content) or a flat array
-      const notificationsArray = data.content ? data.content : data;
+      const notificationsArray = Array.isArray(data) ? data : ((data as any)?.content || []);
       
       setNotifications(notificationsArray);
       setError(null);

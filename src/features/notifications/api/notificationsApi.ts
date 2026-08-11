@@ -1,9 +1,8 @@
 import { apiClient } from "../../../lib/axios";
-import type { PaginatedResponse } from "../types/PaginatedResponse";
-import type { Notification } from "../validation/notificationSchema";
+import type { AppNotification, PaginatedResponse } from "../types/PaginatedResponse";
 
-export const fetchNotificationsApi = async () => {
-  const response = await apiClient.get<PaginatedResponse<Notification>>('/notifications');
+export const fetchNotificationsApi = async (): Promise<AppNotification[]> => {
+  const response = await apiClient.get<PaginatedResponse<AppNotification>>('/notifications');
   return response.data.content;
 };
 

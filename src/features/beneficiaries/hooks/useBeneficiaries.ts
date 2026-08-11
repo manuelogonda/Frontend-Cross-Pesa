@@ -12,7 +12,7 @@ export const useBeneficiaries = () => {
   // Helper to extract clean error messages from the backend
   const handleError = (err: any) => {
     if (err instanceof ZodError) {
-      console.error("Zod Validation Error:", err.errors);
+      console.error("Zod Validation Error:", err.issues);
       setError("Data format error. Please check your inputs.");
     } else {
       setError(err.response?.data?.message || err.message || "An unexpected error occurred.");

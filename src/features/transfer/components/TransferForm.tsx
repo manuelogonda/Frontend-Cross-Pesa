@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from "react";
 import { useWallets } from "../../wallet/hooks/useWallets";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTransfer } from "../hooks/useTransfer";
 import { RateDisplayCard } from "../../rates/components/RateDisplayCard";
 import { AlertCircle, ArrowRight, CheckCircle2, ShieldCheck, TrendingUp, User, WalletIcon } from "lucide-react";
-import { TransferSchema, type TransferFormData } from "../validation/transferSchema";
+import { TransferSchema, type TransferFormInput } from "../validation/transferSchema";
 import { Currencies } from "../../wallet/validation/walletShema";
 import { fetchBeneficiariesApi } from "../../beneficiaries/api/beneficiaryApi";
+import { useEffect, useState } from "react";
 
 
 export const TransferForm = () => {
@@ -45,12 +45,12 @@ export const TransferForm = () => {
     setValue, 
     reset,
     formState: { errors } 
-  } = useForm<TransferFormData>({
+  } = useForm<TransferFormInput>({
     resolver: zodResolver(TransferSchema),
     defaultValues: {
       sourceCurrency: wallet?.currency || 'USD',
       destinationCurrency: 'KES',
-      amount: undefined,
+      amount: 0,
     }
   });
 
@@ -80,7 +80,7 @@ export const TransferForm = () => {
   const activeSourceCurrency = watch("sourceCurrency") || wallet?.currency || 'USD';
 
   // 3. Submit Handler
-  const onSubmit = async (data: TransferFormData) => {
+  const onSubmit = async (data: TransferFormInput) => {
     try {
       await execute(data);
     } catch {
@@ -130,7 +130,7 @@ export const TransferForm = () => {
 
         {/* Beneficiary Selection */}
         <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 items-center gap-1.5">
             <User size={14} /> Send To Beneficiary
           </label>
           <select 
@@ -158,7 +158,7 @@ export const TransferForm = () => {
               <input 
                 type="number"
                 step="0.01"
-                {...register("amount", { valueAsNumber: true })}
+                {...register("amount",{ valueAsNumber: true })}
                 className={`w-full p-4 pr-24 text-xl font-extrabold border rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${errors.amount ? 'border-red-500' : 'border-slate-200'}`}
                 placeholder="0.00"
               />

@@ -22,7 +22,11 @@ export const useWalletStatement = (initialSize: number = 10) => {
     try {
       const data = await getWalletStatement(currentPage, size);
       
-      setEntries(data.content);
+      setEntries(data.content.map((item: any) => ({
+        ...item,
+        transactionId: item.transactionId ?? '',
+        walletId: item.walletId ?? '',
+      })));
       setTotalPages(data.totalPages);
       setTotalElements(data.totalElements);
     } catch (err: any) {

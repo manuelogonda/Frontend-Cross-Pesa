@@ -4,8 +4,7 @@ import { z } from 'zod';
 export const BENEFICIARY_TYPES = ['INDIVIDUAL', 'ORGANIZATION', 'BUSINESS'] as const;
 export const PAYOUT_METHODS = ['BANK_TRANSFER', 'MOBILE_MONEY', 'CARD_PAYMENT'] as const;
 export const PAYOUT_PROVIDERS = ['MPESA', 'EQUITY_BANK', 'VISA', 'MASTERCARD'] as const;
-// Assuming standard currencies
-export const CURRENCIES = ['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS', 'RWF'] as const;
+export const CURRENCIES = ['KES', 'USD', 'CNY', 'JPY', 'GBP', 'CAD', 'AUD', 'PKR', 'AED', 'SAR', 'EUR', 'SEK'] as const;
 
 export const beneficiarySchema = z.object({
   id: z.string().uuid().optional(),
@@ -20,10 +19,7 @@ export const beneficiarySchema = z.object({
     .max(50, "Last name cannot exceed 50 characters"),
     
   // @NotNull
-  beneficiaryType: z.enum(BENEFICIARY_TYPES, {
-    required_error: "Beneficiary type is required",
-    invalid_type_error: "Please select a valid beneficiary type"
-  }),
+  beneficiaryType: z.enum(BENEFICIARY_TYPES, "Please select a valid beneficiary type"),
   
   // @NotBlank, @Email, @Size(max = 100)
   email: z.string()
@@ -47,16 +43,10 @@ export const beneficiarySchema = z.object({
     .or(z.literal('')), // Allows empty string instead of undefined
     
   // @NotNull
-  payoutMethod: z.enum(PAYOUT_METHODS, {
-    required_error: "Payout method is required",
-    invalid_type_error: "Please select a valid payout method"
-  }),
+  payoutMethod: z.enum(PAYOUT_METHODS, "Please select a valid payout method"),
   
   // @NotNull
-  payoutProvider: z.enum(PAYOUT_PROVIDERS, {
-    required_error: "Payout provider is required",
-    invalid_type_error: "Please select a valid provider"
-  }),
+  payoutProvider: z.enum(PAYOUT_PROVIDERS, "Payout provider is required"),
   
   // @NotBlank, @Size(max = 50)
   accountNumber: z.string()
@@ -64,10 +54,7 @@ export const beneficiarySchema = z.object({
     .max(50, "Account number cannot exceed 50 characters"),
     
   // @NotNull mapped to Currency enum
-  accountCurrency: z.enum(CURRENCIES, {
-    required_error: "Currency is required",
-    invalid_type_error: "Please select a valid currency"
-  })
+  accountCurrency: z.enum(CURRENCIES, "Please select a valid currency")
 });
 
 export type BeneficiaryFormData = z.infer<typeof beneficiarySchema>;

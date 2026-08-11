@@ -1,5 +1,13 @@
 import { useLiveQuote } from "../hooks/useRatesHook";
 
+
+export interface RateDisplayCardProps {
+  rate?: number;
+  sourceCurrency: string;
+  destinationCurrency: string;
+  amountToConvert?: number;
+}
+
 export const RateDisplayCard: React.FC<RateDisplayCardProps> = ({
   sourceCurrency,
   destinationCurrency,

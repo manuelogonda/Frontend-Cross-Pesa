@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { apiClient } from "../../../lib/axios";
 import { getWallet, topUpWallet, verifyWalletTopUp } from "../services/walletService";
 import type { TopUpFormData, Wallet } from "../validation/walletShema";
 import { ZodError } from "zod";
@@ -25,7 +24,7 @@ export const useWallets = () => {
         // Valid state: The user just registered and hasn't created a wallet yet
         setWallet(null);
       } else if (err instanceof ZodError) {
-        console.error("Wallet Schema Validation Error:", err.errors);
+        console.error("Wallet Schema Validation Error:", err.issues);
         setError("Received invalid wallet data format from the server.");
       } else {
         const message = err.response?.data?.message || 'Failed to fetch wallet. Please check your connection.';

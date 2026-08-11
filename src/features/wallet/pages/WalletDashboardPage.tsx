@@ -50,6 +50,15 @@ export const WalletDashboardPage = () => {
     );
   }
 
+
+const formattedEntries = entries.map((entry) => ({
+  ...entry,
+  direction: (entry.debit > 0 ? 'DEBIT' : 'CREDIT') as 'DEBIT' | 'CREDIT',
+  formattedAmount: `${entry.amount}`,
+  formattedBalance: `${entry.balanceAfter}`,
+  badgeColor: entry.debit > 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700',
+}));
+
   // 4. EMPTY STATE: If the user hasn't created a wallet, prompt them to do so
   if (!wallet) {
     return (
@@ -107,7 +116,7 @@ export const WalletDashboardPage = () => {
           </div>
         ) : (
           <>
-            <LedgerTable entries={entries} isLoading={isLoadingLedger} />
+            <LedgerTable entries={formattedEntries} isLoading={isLoadingLedger} />
             
             {/* Pagination Controls Hooked up to useWalletStatement */}
             {entries.length > 0 && (

@@ -1,6 +1,6 @@
 import z from "zod";
 import { apiClient } from "../../../lib/axios";
-import { ledgerEntrySchema, ledgerStatementResponseSchema, PaginatedLedgerResponseSchema, type PaginatedLedgerResponse } from "../types";
+import { ledgerEntrySchema, type PaginatedLedgerResponse } from "../types";
 
 export const getWalletStatementApi = async (
   page: number = 0,

@@ -1,11 +1,13 @@
 import { useBeneficiaries } from "../hooks/useBeneficiaries";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, Edit2, Trash2, Users } from "lucide-react";
+import { AlertCircle, Edit2, Edit3, Plus, Trash2, Users } from "lucide-react";
 import { BENEFICIARY_TYPES, beneficiarySchema, PAYOUT_METHODS, PAYOUT_PROVIDERS, type BeneficiaryFormData } from "../validation/beneficiarySchema";
 import type { Beneficiary } from "../../transfer/types/finance";
 import { Currencies } from "../../wallet/validation/walletShema";
 import { useEffect, useState } from "react";
+
+
 
 export const formatEnumString = (str: string) => {
   if (!str) return '';
@@ -62,8 +64,24 @@ export const BeneficiaryPage = () => {
   };
 
   const handleEdit = (beneficiary: Beneficiary) => {
-    setEditingId(beneficiary.id!);
-    reset(beneficiary); 
+    if (!beneficiary.id) return;
+    setEditingId(beneficiary.id);
+    
+    // Explicitly map properties to match the strict form data types
+    reset({
+      firstName: beneficiary.firstName,
+      lastName: beneficiary.lastName,
+      beneficiaryType: beneficiary.beneficiaryType as BeneficiaryFormData['beneficiaryType'],
+      email: beneficiary.email,
+      phoneNumber: beneficiary.phoneNumber,
+      countryCode: beneficiary.countryCode,
+      city: beneficiary.city || '',
+      payoutMethod: beneficiary.payoutMethod as BeneficiaryFormData['payoutMethod'],
+      payoutProvider: beneficiary.payoutProvider as BeneficiaryFormData['payoutProvider'],
+      accountNumber: beneficiary.accountNumber,
+      accountCurrency: beneficiary.accountCurrency as BeneficiaryFormData['accountCurrency'],
+    });
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -92,7 +110,8 @@ export const BeneficiaryPage = () => {
       <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
         <div className="mb-6 pb-3 border-b border-slate-100 flex items-center justify-between">
           <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            {editingId ? "✏️ Edit Beneficiary Details" : "➕ Add New Beneficiary"}
+            {editingId ? <Edit3 size={20} className="text-indigo-600" /> : <Plus size={20} className="text-indigo-600" />}
+             <span>{editingId ? "Edit Beneficiary Details" : "Add New Beneficiary"}</span>
           </h2>
           {editingId && (
             <span className="text-xs font-semibold bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full">

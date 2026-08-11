@@ -1,26 +1,19 @@
 import { z } from 'zod';
 import { Currencies } from '../../wallet/validation/walletShema';
 
-// ==========================================
-// 1. TRANSFER REQUEST SCHEMA
-// ==========================================
 export const TransferSchema = z.object({
   sourceWalletId: z.string().uuid("Invalid source wallet reference."),
   beneficiaryId: z.string().uuid("Please select a destination beneficiary."),
-  
-  // Tied to our single source of truth for currencies
   sourceCurrency: z.enum(Currencies),
   destinationCurrency: z.enum(Currencies),
-  
-  amount: z.coerce
-    .number({
-      required_error: "Amount is required",
-      invalid_type_error: "Amount must be a valid number",
-    })
-    .positive("Amount must be greater than zero"),
+  // Use z.preprocess or standard number validation if input is handled by valueAsNumber
+  amount: z.number({ message: "Amount is required" }).positive(),
 });
 
-export type TransferFormData = z.infer<typeof TransferSchema>;
+// Use z.input for form fields where values can be empty/strings initially
+export type TransferFormInput = z.input<typeof TransferSchema>;
+// Use z.output (or z.infer) for the final validated payload
+export type TransferFormData = z.output<typeof TransferSchema>;
 
 // ==========================================
 // 2. TRANSACTION RESPONSE SCHEMA

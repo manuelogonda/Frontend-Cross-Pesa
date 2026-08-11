@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
-import { TopUpSchema, type TopUpFormData } from "../validation/walletShema";
+import { TopUpSchema, type TopUpFormData, type TopUpFormValues } from "../validation/walletShema";
 
 export const TopUpPage = () => {
   const navigate = useNavigate();
@@ -23,7 +23,7 @@ export const TopUpPage = () => {
     handleSubmit,
     setValue, 
     formState: { errors }
-  } = useForm<TopUpFormData>({
+  } = useForm<TopUpFormValues, any, TopUpFormData>({
     resolver: zodResolver(TopUpSchema)
   });
 
