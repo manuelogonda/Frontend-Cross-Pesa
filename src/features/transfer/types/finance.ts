@@ -51,17 +51,20 @@ export interface TransactionRequest {
 
 export interface TransactionResponse {
   id: string;
-  reference: string;
-  status: "FAILED" | "PENDING" | "PROCESSING" | "COMPLETED" | "FLAGGED";
-  grossAmount: number;
-  amountReceived: number;
+  senderId: string;
+  sourceWalletId: string;
+  beneficiaryId?: string | null;
   sourceCurrency: string;
   destinationCurrency: string;
-  exchangeRate: number;
+  grossAmount: number;
+  netAmount: number;
+  markupFee: number;
+  routingFee: number;
+  totalFee: number;
+  amountReceived: number;
+  fxRateApplied: number;
+  usdNormalizationRate: number;
+  reference: string;
+  status: "FAILED" | "PENDING" | "PROCESSING" | "COMPLETED" | "FLAGGED";
   createdAt: string;
-  gatewayReference?: string;
-  sourceAmount?: number;
-  destinationAmount?: number;
-  transferFee?: number;
-  fxRateApplied?: number;
 }

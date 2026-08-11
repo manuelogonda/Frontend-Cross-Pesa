@@ -15,22 +15,27 @@ export type TransferFormInput = z.input<typeof TransferSchema>;
 // Use z.output (or z.infer) for the final validated payload
 export type TransferFormData = z.output<typeof TransferSchema>;
 
-// ==========================================
-// 2. TRANSACTION RESPONSE SCHEMA
-// Maps to the backend DTO, hiding system revenue fields from the retail user
-// ==========================================
 export const TransactionResponseSchema = z.object({
   id: z.string().uuid(),
-  reference: z.string(),
-  status: z.enum(['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'FLAGGED']),
-  
-  grossAmount: z.number(),      // What was deducted from sender
-  amountReceived: z.number(),   // What the beneficiary gets
+  senderId: z.string().uuid(),
+  sourceWalletId: z.string().uuid(),
+  beneficiaryId: z.string().uuid().nullable().optional(),
   
   sourceCurrency: z.enum(Currencies),
   destinationCurrency: z.enum(Currencies),
   
-  exchangeRate: z.number(),
+  grossAmount: z.number(),
+  netAmount: z.number(),
+  markupFee: z.number(),
+  routingFee: z.number(),
+  totalFee: z.number(),
+  amountReceived: z.number(),
+  
+  fxRateApplied: z.number(),       // Matches backend fxRateApplied
+  usdNormalizationRate: z.number(),
+  
+  reference: z.string(),
+  status: z.enum(['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'FLAGGED']),
   createdAt: z.string(),
 });
 
