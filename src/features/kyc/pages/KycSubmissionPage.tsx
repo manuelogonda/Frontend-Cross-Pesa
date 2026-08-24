@@ -28,7 +28,7 @@ export const KycSubmissionPage = () => {
     const currentCamera = cameraRef.current;
     
     const handleSuccess = (event: any) => {
-      console.log("Smile ID Capture Success Event:", event);
+      // Biometric/KYC event payloads are never logged
       const jobId = event.detail?.job_id || event.detail?.success?.job_id;
       
       if (jobId) {
@@ -39,7 +39,6 @@ export const KycSubmissionPage = () => {
     };
 
     const handleError = (event: any) => {
-      console.error("Smile ID Camera Error:", event.detail);
       alert("Camera error: " + (event.detail?.message || "Please check camera permissions."));
       setIsCameraActive(false);
     };

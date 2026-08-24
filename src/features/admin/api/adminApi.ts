@@ -49,7 +49,7 @@ export const fetchAdminUsersApi = async (
   const { data } = await apiClient.get("/admin/users", {
     params: { page, size },
   });
-  console.log("RAW USERS DATA FROM BACKEND:", data);
+  // PII: never dump raw user records to the console
   return PaginatedAdminUsersSchema.parse(data);
 };
 

@@ -14,8 +14,8 @@ export const executeTransferApi = async (data: TransferFormData): Promise<Transa
     idempotencyKey: uuidv4(),
   };
   
-  console.log("Sending Transfer Payload:", JSON.stringify(payload, null, 2));
-  
+  // PII/financial data: never log transfer payloads
+
   const { data: responseData } = await apiClient.post('/transactions/send', payload);
   
   // Strictly enforce the contract before returning to the UI

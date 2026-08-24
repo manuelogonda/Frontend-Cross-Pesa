@@ -24,15 +24,13 @@ export const authService = {
       return response.data;
       
     } catch (error: any) {
-      // 2. Catch and format the error
+      // 2. Catch and format the error — surfaced to the UI via the thrown Error;
+      //    never log raw credentials or response bodies (PII).
       const errorMessage = error.response?.data?.message || 'Failed to securely log in.';
-      console.error('[AuthService] Login Error:', errorMessage);
-      console.error('[AuthService] RAW ERROR DETAILS:', error.response?.status, error.response?.data || error.message);
       throw new Error(errorMessage);
       
     } finally {
-      // 3. Execute cleanup or analytics regardless of success/failure
-      console.log('[AuthService] Login execution cycle completed.');
+      // 3. Hook point for analytics/telemetry regardless of success/failure
     }
   },
 
@@ -47,16 +45,14 @@ export const authService = {
 
       // Backend 400 shape: { message: "Validation failed...", validationErrors: { password: "...", ... } }
       if (status === 400 && body?.validationErrors && typeof body.validationErrors === 'object') {
-        console.error('[AuthService] Registration field errors:', body.validationErrors);
         throw new ApiFieldError(body.message || 'Validation failed.', body.validationErrors);
       }
 
       const errorMessage = body?.message || 'Registration failed.';
-      console.error('[AuthService] Registration Error:', errorMessage);
       throw new Error(errorMessage);
       
     } finally {
-      console.log('[AuthService] Registration execution cycle completed.');
+      // Hook point for analytics/telemetry regardless of success/failure
     }
   }
 };

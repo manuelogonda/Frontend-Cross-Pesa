@@ -36,7 +36,6 @@ export const useTransfer = () => {
       return response;
     } catch (err: unknown) {
       if (err instanceof ZodError) {
-        console.error("Transaction Schema Validation Error:", err.issues);
         setError("Received an invalid response format from the server.");
       } else if (isDuplicateTransaction(err)) {
         // HTTP 409 — idempotency key replayed; funds moved exactly once.

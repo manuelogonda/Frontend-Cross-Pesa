@@ -58,8 +58,7 @@ export const AdminUsersPage = () => {
       );
       setKycModalUser(null);
       refresh(); // Refresh the list from the hook to get updated data
-    } catch (err) {
-      console.error("Failed to update KYC", err);
+  } catch (err) {
       alert("An error occurred while updating KYC.");
     }
   };

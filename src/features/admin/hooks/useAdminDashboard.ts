@@ -29,7 +29,6 @@ export const useAdminDashboard = () => {
       setTransactionsData(txData);
     } catch (err: any) {
       if (err instanceof ZodError) {
-        console.error("Schema Validation Error:", err.issues);
         setError("Received invalid data format from the server.");
       } else {
         setError(err.response?.data?.message || err.message || "Failed to load dashboard data");
