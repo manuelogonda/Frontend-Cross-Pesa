@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { getWalletStatement, type UserLedgerEntry } from "../services/walletService";
+import { getWalletStatement } from "../services/walletService";
+import type { LedgerEntry } from "../../ledger/types";
 import { ZodError } from "zod";
 
 export const useWalletStatement = (initialSize: number = 10) => {
   // Data State
-  const [entries, setEntries] = useState<UserLedgerEntry[]>([]);
+  const [entries, setEntries] = useState<LedgerEntry[]>([]);
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState<number>(0);
@@ -22,11 +23,9 @@ export const useWalletStatement = (initialSize: number = 10) => {
     try {
       const data = await getWalletStatement(currentPage, size);
       
-      setEntries(data.content.map((item: any) => ({
-        ...item,
-        transactionId: item.transactionId ?? '',
-        walletId: item.walletId ?? '',
-      })));
+      // Content is already contract-parsed by getWalletStatement (ledger/types);
+      // transactionId/walletId nullability is handled by the schema itself.
+      setEntries(data.content);
       setTotalPages(data.totalPages);
       setTotalElements(data.totalElements);
     } catch (err: any) {

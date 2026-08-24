@@ -19,30 +19,8 @@ export interface SpendFormData {
   description: string;
 }
 
-// Ledger Statement Schemas (Aligned with LedgerEntryResponse.java)
-export const UserLedgerEntrySchema = z.object({
-  id: z.string().uuid(),
-  transactionId: z.string().uuid(),
-  entryClass: z.string(),
-  debit: z.number(),
-  credit: z.number(),
-  amount: z.number(), // Net impact
-  balanceAfter: z.number(),
-  currency: z.string(),
-  description: z.string(),
-  createdAt: z.string()
-});
-
-export const PaginatedUserStatementSchema = z.object({
-  content: z.array(UserLedgerEntrySchema),
-  totalPages: z.number(),
-  totalElements: z.number(),
-  size: z.number(),
-  number: z.number(),
-});
-
-export type UserLedgerEntry = z.infer<typeof UserLedgerEntrySchema>;
-export type PaginatedUserStatement = z.infer<typeof PaginatedUserStatementSchema>;
+// NOTE: Ledger statement contracts live in features/ledger/types
+// (ledgerEntrySchema / PaginatedLedgerResponse) — the single source of truth.
 
 // ==========================================
 // 2. WALLET OPERATIONS
