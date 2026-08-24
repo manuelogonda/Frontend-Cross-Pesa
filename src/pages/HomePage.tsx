@@ -3,7 +3,7 @@ import { useAuthStore } from "../store/authStore";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Currencies } from "../features/wallet/validation/walletShema";
-import { fetchAndValidateQuote } from "../features/rates/api/ratesApi";
+import { fetchAndValidateQuote } from "../features/rates/services/rateService";
 
 export const HomePage: React.FC = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
