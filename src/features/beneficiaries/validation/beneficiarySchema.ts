@@ -58,3 +58,26 @@ export const beneficiarySchema = z.object({
 });
 
 export type BeneficiaryFormData = z.infer<typeof beneficiarySchema>;
+
+// ── Response DTO contract (what GET /beneficiaries actually returns) ──────
+// Deliberately separate from the form schema above: input validation carries
+// user-facing error messages & constraints; the response contract only needs
+// to guarantee shape safety for rendering and transfer binding.
+export const BeneficiaryResponseSchema = z.object({
+  id: z.string().uuid().nullable().optional(),
+  firstName: z.string(),
+  lastName: z.string(),
+  beneficiaryType: z.enum(BENEFICIARY_TYPES),
+  email: z.string(),
+  phoneNumber: z.string(),
+  countryCode: z.string(),
+  city: z.string().nullable().optional(),
+  payoutMethod: z.enum(PAYOUT_METHODS),
+  payoutProvider: z.enum(PAYOUT_PROVIDERS),
+  accountNumber: z.string(),
+  accountCurrency: z.enum(CURRENCIES),
+});
+
+// Canonical Beneficiary type — supersedes the loose interface that used to
+// live in features/transfer/types/finance.ts
+export type Beneficiary = z.infer<typeof BeneficiaryResponseSchema>;

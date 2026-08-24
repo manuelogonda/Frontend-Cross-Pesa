@@ -16,20 +16,8 @@ export interface Wallet {
   availableBalance: number;
 }
 
-export interface Beneficiary {
-  id?: string;
-  firstName: string;
-  lastName: string;
-  beneficiaryType: "INDIVIDUAL" | "ORGANIZATION" | "BUSINESS";
-  email: string;
-  phoneNumber: string;
-  countryCode: string;
-  city?: string;
-  payoutMethod: "BANK_TRANSFER" | "MOBILE_MONEY" | "CARD_PAYMENT";
-  payoutProvider: "MPESA" | "EQUITY_BANK" | "VISA" | "MASTERCARD";
-  accountNumber: string;
-  accountCurrency: "KES" | "USD" | "CNY" | "JPY" | "GBP" | "CAD" | "AUD" | "PKR" | "AED" | "SAR" | "EUR" | "SEK";
-}
+// NOTE: The Beneficiary type moved to features/beneficiaries/validation/beneficiarySchema
+// (BeneficiaryResponseSchema) — the Zod-validated single source of truth.
 
 export interface FxQuote {
   quoteId: string;

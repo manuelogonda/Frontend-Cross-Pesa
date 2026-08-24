@@ -1,9 +1,26 @@
+import { z } from "zod";
 import { apiClient } from "../../../lib/axios";
-import type { BeneficiaryFormData } from "../validation/beneficiarySchema";
+import {
+  BeneficiaryResponseSchema,
+  type Beneficiary,
+  type BeneficiaryFormData,
+} from "../validation/beneficiarySchema";
 
-export const fetchBeneficiariesApi = async () => {
-  const { data } = await apiClient.get('/beneficiaries');
-  return data;
+/**
+ * Fetches saved beneficiaries.
+ *
+ * Defensive against BOTH backend pagination shapes (flat array vs Spring
+ * PagedModel `.content`), then enforces the Zod contract — previously this
+ * returned untyped `any`, leaving every consumer to guess the shape.
+ */
+export const fetchBeneficiariesApi = async (): Promise<Beneficiary[]> => {
+  const { data } = await apiClient.get<unknown>('/beneficiaries');
+
+  const rawList = Array.isArray(data)
+    ? data
+    : ((data as { content?: unknown[] })?.content ?? []);
+
+  return z.array(BeneficiaryResponseSchema).parse(rawList);
 };
 
 export const addBeneficiaryApi = async (data: BeneficiaryFormData) => {

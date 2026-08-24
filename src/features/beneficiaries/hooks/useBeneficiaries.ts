@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import type { BeneficiaryFormData } from "../validation/beneficiarySchema";
 import { addBeneficiaryApi, deleteBeneficiaryApi, fetchBeneficiariesApi, updateBeneficiaryApi } from "../api/beneficiaryApi";
 import { ZodError } from "zod";
-import type { Beneficiary } from "../../transfer/types/finance";
+import type { Beneficiary } from "../validation/beneficiarySchema";
 
 export const useBeneficiaries = () => {
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);

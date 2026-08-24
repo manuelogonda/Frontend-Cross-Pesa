@@ -6,36 +6,17 @@ import { RateDisplayCard } from "../../rates/components/RateDisplayCard";
 import { AlertCircle, ArrowRight, CheckCircle2, ShieldCheck, TrendingUp, User, WalletIcon } from "lucide-react";
 import { TransferSchema, type TransferFormInput } from "../validation/transferSchema";
 import { Currencies } from "../../wallet/validation/walletShema";
-import { fetchBeneficiariesApi } from "../../beneficiaries/api/beneficiaryApi";
-import { useEffect, useState } from "react";
+import { useBeneficiaries } from "../../beneficiaries/hooks/useBeneficiaries";
+import { useEffect } from "react";
 
 
 export const TransferForm = () => {
   const { wallet, isLoading: walletLoading } = useWallets();
-  const [beneficiaries, setBeneficiaries] = useState<any[]>([]);
-  const [isLoadingBeneficiaries, setIsLoadingBeneficiaries] = useState(true);
-
-  // 1. Fetch Real Beneficiaries from Backend API
-  useEffect(() => {
-    let isMounted = true;
-    
-    fetchBeneficiariesApi()
-      .then((res: any) => {
-        if (isMounted) {
-          setBeneficiaries(res.content || res || []);
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to load beneficiaries:", err);
-      })
-      .finally(() => {
-        if (isMounted) setIsLoadingBeneficiaries(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  // Single source of truth for saved beneficiaries (Zod-parsed via the API layer)
+  const {
+    beneficiaries,
+    isLoading: isLoadingBeneficiaries,
+  } = useBeneficiaries();
 
   // 2. Setup React Hook Form with strict Zod Validation
   const { 
