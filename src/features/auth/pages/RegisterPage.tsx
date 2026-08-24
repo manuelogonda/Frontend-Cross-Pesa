@@ -1,23 +1,47 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
-import { Loader2, User, Mail, Phone, Lock} from 'lucide-react';
-import { registerSchema, type RegisterFormData } from '../validation/authSchema';
+import { useState } from 'react';
+import { Loader2, User, Mail, Phone, Lock, Wallet} from 'lucide-react';
+import { registerSchema, type RegisterFormData, type RegisterFormInput } from '../validation/authSchema';
 import { useRegister } from '../hooks/useAuthMutation';
+import { ApiFieldError } from '../services/authService';
+import { Currencies } from '../../wallet/validation/walletShema';
+
+// Fields the backend may reject with per-field validation errors
+const SERVER_FIELD_NAMES = ['firstName', 'lastName', 'email', 'phoneNumber', 'password', 'currency'];
 
 export const RegisterPage = () => {
-  const { mutate: registerUser, isPending, error } = useRegister();
+  const { mutateAsync: registerUser, isPending } = useRegister();
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
-  } = useForm<RegisterFormData>({
+  } = useForm<RegisterFormInput, unknown, RegisterFormData>({
     resolver: zodResolver(registerSchema),
   });
 
-  const onSubmit = (data: RegisterFormData) => {
-    registerUser(data);
+  const onSubmit = async (data: RegisterFormData) => {
+    setServerError(null);
+    try {
+      await registerUser(data);
+    } catch (err) {
+      if (err instanceof ApiFieldError && Object.keys(err.fieldErrors).length > 0) {
+        // Surface each backend validationErrors entry inline on its field.
+        // type: 'server' keeps them distinct and clears on the next submit.
+        Object.entries(err.fieldErrors).forEach(([field, message]) => {
+          if (SERVER_FIELD_NAMES.includes(field)) {
+            setError(field as keyof RegisterFormData, { type: 'server', message });
+          }
+        });
+        setServerError(err.message || 'Please fix the highlighted fields.');
+        return;
+      }
+      setServerError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
+    }
   };
 
   return (
@@ -33,9 +57,9 @@ export const RegisterPage = () => {
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          {error && (
+          {serverError && (
             <div className="p-3 bg-red-50 text-red-700 text-sm rounded-md border border-red-200">
-              {error.message}
+              {serverError}
             </div>
           )}
 
@@ -115,11 +139,38 @@ export const RegisterPage = () => {
                 <input
                   {...register('password')}
                   type="password"
+                  autoComplete="new-password"
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-600 focus:border-indigo-600 sm:text-sm"
-                  placeholder="••••••••"
+                  placeholder="••••••••••••"
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                10–128 characters with at least one uppercase letter, one lowercase letter, one digit, and one special character.
+              </p>
               {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Wallet Currency <span className="font-normal text-gray-400">(optional)</span>
+              </label>
+              <div className="relative mt-1">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Wallet className="h-5 w-5 text-gray-400" />
+                </div>
+                <select
+                  {...register('currency')}
+                  defaultValue=""
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-indigo-600 focus:border-indigo-600 sm:text-sm"
+                >
+                  <option value="">Select your preferred currency</option>
+                  {Currencies.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">Your retail wallet is created automatically in this currency.</p>
+              {errors.currency && <p className="mt-1 text-xs text-red-600">{errors.currency.message}</p>}
             </div>
           </div>
 

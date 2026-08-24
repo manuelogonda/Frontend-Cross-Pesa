@@ -1,7 +1,5 @@
 import { z } from 'zod';
-
-
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{5,}$/;
+import { Currencies } from '../../wallet/validation/walletShema';
 
 // Login Validation
 export const loginSchema = z.object({
@@ -15,13 +13,29 @@ export const registerSchema = z.object({
   lastName: z.string().min(2, 'Last name is required'),
   email: z.email().min(1, 'Email is required'),
   phoneNumber: z.string().min(8, 'Please enter a valid phone number'),
+  // Mirrors backend password policy: 10–128 chars with at least one
+  // uppercase, one lowercase, one digit, and one special character.
+  // Chained individually so each rule surfaces its own precise inline error.
   password: z.string()
-    .min(8, 'Password must be at least 5 characters long')
-    .regex(passwordRegex, 'Password must contain uppercase, lowercase, number, and special character'),
+    .min(10, 'Password must be at least 10 characters long')
+    .max(128, 'Password cannot exceed 128 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one digit')
+    .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
+  // Optional: when provided, the backend auto-creates the user's retail
+  // wallet in this currency immediately after registration.
+  currency: z.preprocess(
+    (v) => (v === '' || v === null ? undefined : v),
+    z.enum(Currencies).optional()
+  ),
 });
 
 // Export inferred TypeScript types for React Hook Form
 export type LoginFormData = z.infer<typeof loginSchema>;
+// Input type: pre-validation form values (currency may be '' from the select placeholder)
+export type RegisterFormInput = z.input<typeof registerSchema>;
+// Output type: post-validation values sent to the backend
 export type RegisterFormData = z.infer<typeof registerSchema>;
 
 // Backend Response Interface

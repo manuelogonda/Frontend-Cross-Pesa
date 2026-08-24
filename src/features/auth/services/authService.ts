@@ -1,6 +1,21 @@
 import { apiClient } from "../../../lib/axios";
 import type { AuthResponse, LoginFormData, RegisterFormData } from "../validation/authSchema";
 
+/**
+ * Thrown when the backend rejects a payload with per-field validation errors.
+ * Carries the `validationErrors` map ({ password: "...", email: "...", ... })
+ * so forms can render server-side messages inline next to each field.
+ */
+export class ApiFieldError extends Error {
+  readonly fieldErrors: Record<string, string>;
+
+  constructor(message: string, fieldErrors: Record<string, string> = {}) {
+    super(message);
+    this.name = 'ApiFieldError';
+    this.fieldErrors = fieldErrors;
+  }
+}
+
 export const authService = {
   login: async (credentials: LoginFormData): Promise<AuthResponse> => {
     try {
@@ -27,7 +42,16 @@ export const authService = {
       return response.data;
       
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 'Registration failed.';
+      const status = error?.response?.status;
+      const body = error?.response?.data;
+
+      // Backend 400 shape: { message: "Validation failed...", validationErrors: { password: "...", ... } }
+      if (status === 400 && body?.validationErrors && typeof body.validationErrors === 'object') {
+        console.error('[AuthService] Registration field errors:', body.validationErrors);
+        throw new ApiFieldError(body.message || 'Validation failed.', body.validationErrors);
+      }
+
+      const errorMessage = body?.message || 'Registration failed.';
       console.error('[AuthService] Registration Error:', errorMessage);
       throw new Error(errorMessage);
       
