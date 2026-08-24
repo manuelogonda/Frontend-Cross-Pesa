@@ -77,19 +77,16 @@ export const topUpWallet = async (formData: TopUpFormData): Promise<TopUpRespons
 };
 
 /**
- * Finalizes the funding step by dispatching Flutterwave parameters 
- * back to Spring Boot for secure double-entry verification.
+ * Finalizes the funding step by sending ONLY the Flutterwave transaction ID
+ * back to Spring Boot. The server securely derives amount/currency/payer from
+ * Flutterwave's own verify API — client-supplied values are never trusted.
  */
 export const verifyWalletTopUp = async (params: {
   transactionId: string;
-  amount: string;
-  currency: string;
 }): Promise<VerificationResponse> => {
   const { data } = await apiClient.post<VerificationResponse>('/wallets/verify', null, {
     params: {
-      transactionId: params.transactionId,
-      amount: params.amount,
-      currency: params.currency
+      transactionId: params.transactionId
     }
   });
   return data;

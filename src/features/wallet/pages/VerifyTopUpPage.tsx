@@ -23,24 +23,19 @@ export const VerifyTopUpPage = () => {
       // Flutterwave redirects with these URL parameters
       const txId = searchParams.get('transaction_id');
       const status = searchParams.get('status');
-      
-      const expectedAmount = sessionStorage.getItem("pending_topup_amount");
-      const expectedCurrency = sessionStorage.getItem("pending_topup_currency");
 
-      if (status !== 'successful' || !txId || !expectedAmount || !expectedCurrency) {
+      // The backend now derives amount/currency/payer from Flutterwave's verify API,
+      // so the client only needs a successful status and the transaction ID.
+      if (status !== 'successful' || !txId) {
         setVerificationStatus('failed');
         return;
       }
 
       // Execute strict backend Double-Entry Ledger validation
-      const isSuccess = await verifyTopUp(txId, expectedAmount, expectedCurrency);
-      
+      const isSuccess = await verifyTopUp(txId);
+
       if (isSuccess) {
         setVerificationStatus('success');
-        
-        // Clean up session storage so stale data isn't left behind
-        sessionStorage.removeItem("pending_topup_amount");
-        sessionStorage.removeItem("pending_topup_currency");
         
         // Auto-redirect to dashboard after 3 seconds
         setTimeout(() => navigate('/dashboard'), 3000);
@@ -87,7 +82,7 @@ export const VerifyTopUpPage = () => {
             </div>
             <h2 className="text-2xl font-bold text-slate-900 mb-2">Verification Failed</h2>
             <p className="text-slate-500 text-sm mb-8">
-              {topUpError || "Session expired, invalid transaction, or amount mismatch."}
+              {topUpError || "We couldn't verify this payment. Please contact support if funds were deducted."}
             </p>
             <button 
               onClick={() => navigate('/topup')}

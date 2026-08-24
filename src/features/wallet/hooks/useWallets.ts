@@ -41,11 +41,9 @@ export const useWallets = () => {
     try {
       const response = await topUpWallet(formData);
       
-      // Save state for verification callback
-      sessionStorage.setItem("pending_topup_amount", formData.amount.toString());
-      sessionStorage.setItem("pending_topup_currency", formData.currency);
-      
       // 🟢 Force a complete top-level window location replacement
+      // NOTE: No client state is carried into the redirect — the backend now
+      // derives amount/currency/payer server-side from Flutterwave's verify API.
       window.location.replace(response.paymentLink);
     } catch (err: any) {
       const message = err.response?.data?.message || 'Failed to initiate checkout. Please try again.';
@@ -54,17 +52,21 @@ export const useWallets = () => {
     }
   };
 
-  const verifyTopUpAction = async (txId: string, amount: string, currency: string) => {
+  const verifyTopUpAction = async (txId: string) => {
     setIsTopUpLoading(true);
     setTopUpError(null);
     try {
-      await verifyWalletTopUp({ transactionId: txId, amount, currency });
+      await verifyWalletTopUp({ transactionId: txId });
       setIsTopUpLoading(false);
       // Reload the wallet to get the fresh double-entry ledger balance!
       await loadWallet();
       return true;
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Payment verification failed.';
+      // Backend 400s return { "error": "..." }, e.g.:
+      // "Payment verification failed." | "Payment does not belong to this account."
+      const message = err.response?.data?.error
+        || err.response?.data?.message
+        || 'Payment verification failed. Please contact support if funds were deducted.';
       setTopUpError(message);
       setIsTopUpLoading(false);
       return false;
