@@ -64,12 +64,8 @@ export const AdminUsersPage = () => {
     }
   };
 
-  // Utility to mask PII in the table
-  const maskIdNumber = (idStr: string | null) => {
-    if (!idStr) return 'N/A';
-    if (idStr.length <= 4) return idStr;
-    return `***-${idStr.slice(-4)}`;
-  };
+  // NOTE: idNumberMasked arrives pre-masked from the backend (e.g. "*****789").
+  // No client-side PII masking — the raw ID number never reaches this app.
 
   return (
     <div className="space-y-6 relative">
@@ -117,7 +113,7 @@ export const AdminUsersPage = () => {
                       <p className="text-xs text-slate-500">{user.email}</p>
                     </td>
                     <td className="p-4 text-slate-600">
-                      {user.idType || 'ID'}: <span className="font-mono">{maskIdNumber(user.idNumber)}</span>
+                      {user.idType || 'ID'}: <span className="font-mono">{user.idNumberMasked || 'N/A'}</span>
                     </td>
                     <td className="p-4">
                       <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${user.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>

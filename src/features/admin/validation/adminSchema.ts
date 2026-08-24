@@ -51,7 +51,8 @@ export const AdminUserSchema = z.object({
   email: z.string().email(),
   phoneNumber: z.string().nullable(),
   idType: z.string().nullable(),
-  idNumber: z.string().nullable(),
+  // Backend sends a PRE-MASKED value (e.g. "*****789"); never receives the raw ID
+  idNumberMasked: z.string().nullable(),
   status: UserStatusSchema,
   kycStatus: KycStatusSchema,
   kycLevel: z.number().int().min(0),

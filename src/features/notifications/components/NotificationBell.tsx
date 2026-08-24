@@ -14,9 +14,9 @@ const NotificationBell: React.FC = () => {
       >
         <Bell className="h-6 w-6" />
         
-        {unreadCount.length > 0 && (
+        {unreadCount > 0 && (
           <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/3 -translate-y-1/3 bg-red-500 rounded-full border-2 border-white animate-pulse">
-            {unreadCount.length > 9 ? '9+' : unreadCount.length}
+            {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
@@ -28,9 +28,9 @@ const NotificationBell: React.FC = () => {
           <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden z-20 transition-all transform origin-top-right">
             <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
               <span className="font-semibold text-slate-700 text-sm">Notifications</span>
-              {unreadCount.length > 0 && (
+              {unreadCount > 0 && (
                 <span className="text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-medium">
-                  {unreadCount.length} new
+                  {unreadCount} new
                 </span>
               )}
             </div>
