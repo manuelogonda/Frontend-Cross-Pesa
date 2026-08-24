@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
-import { TopUpSchema, type TopUpFormData, type TopUpFormValues } from "../validation/walletShema";
+import { TopUpSchema, type TopUpFormData, type TopUpFormValues } from "../validation/walletSchema";
 
 export const TopUpPage = () => {
   const navigate = useNavigate();

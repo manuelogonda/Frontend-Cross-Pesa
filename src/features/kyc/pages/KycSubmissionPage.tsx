@@ -3,7 +3,7 @@ import '@smile_identity/smart-camera-web';
 import { useKyc } from '../hooks/useKyc';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { documentTypes, kycSubmissionSchema, type KycSubmissionFormData } from '../validation/KycShema';
+import { documentTypes, kycSubmissionSchema, type KycSubmissionFormData } from '../validation/kycSchema';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Camera, Shield, CheckCircle2, AlertCircle } from 'lucide-react';
 

@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { fetchAdminSubmissions, fetchMyKycHistory, reviewKycSubmission, submitKycForm } from "../services/KycService";
-import type { KycSubmissionFormData } from "../validation/KycShema";
+import type { KycSubmissionFormData } from "../validation/kycSchema";
 
 export const useKyc = () => {
   const [isLoading, setIsLoading] = useState(false);

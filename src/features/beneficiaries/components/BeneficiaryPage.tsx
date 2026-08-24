@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, Edit2, Edit3, Plus, Trash2, Users } from "lucide-react";
 import { BENEFICIARY_TYPES, beneficiarySchema, PAYOUT_METHODS, PAYOUT_PROVIDERS, type BeneficiaryFormData } from "../validation/beneficiarySchema";
 import type { Beneficiary } from "../validation/beneficiarySchema";
-import { Currencies } from "../../wallet/validation/walletShema";
+import { Currencies } from "../../wallet/validation/walletSchema";
 import { useEffect, useState } from "react";
 
 

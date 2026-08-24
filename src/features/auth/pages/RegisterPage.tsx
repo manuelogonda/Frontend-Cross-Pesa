@@ -6,7 +6,7 @@ import { Loader2, User, Mail, Phone, Lock, Wallet} from 'lucide-react';
 import { registerSchema, type RegisterFormData, type RegisterFormInput } from '../validation/authSchema';
 import { useRegister } from '../hooks/useAuthMutation';
 import { ApiFieldError } from '../services/authService';
-import { Currencies } from '../../wallet/validation/walletShema';
+import { Currencies } from '../../wallet/validation/walletSchema';
 
 // Fields the backend may reject with per-field validation errors
 const SERVER_FIELD_NAMES = ['firstName', 'lastName', 'email', 'phoneNumber', 'password', 'currency'];

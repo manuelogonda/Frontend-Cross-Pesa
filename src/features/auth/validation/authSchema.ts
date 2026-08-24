@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Currencies } from '../../wallet/validation/walletShema';
+import { Currencies } from '../../wallet/validation/walletSchema';
 
 // Login Validation
 export const loginSchema = z.object({

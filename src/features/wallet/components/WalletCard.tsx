@@ -1,5 +1,5 @@
 import { AlertOctagon, ShieldCheck, Snowflake } from "lucide-react";
-import type { Wallet } from "../validation/walletShema";
+import type { Wallet } from "../validation/walletSchema";
 
 interface WalletCardProps {
   wallet: Wallet;

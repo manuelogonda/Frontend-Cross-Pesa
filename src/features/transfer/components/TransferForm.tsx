@@ -5,7 +5,7 @@ import { useTransfer } from "../hooks/useTransfer";
 import { RateDisplayCard } from "../../rates/components/RateDisplayCard";
 import { AlertCircle, ArrowRight, CheckCircle2, ShieldCheck, TrendingUp, User, WalletIcon } from "lucide-react";
 import { TransferSchema, type TransferFormInput } from "../validation/transferSchema";
-import { Currencies } from "../../wallet/validation/walletShema";
+import { Currencies } from "../../wallet/validation/walletSchema";
 import { useBeneficiaries } from "../../beneficiaries/hooks/useBeneficiaries";
 import { useEffect } from "react";
 

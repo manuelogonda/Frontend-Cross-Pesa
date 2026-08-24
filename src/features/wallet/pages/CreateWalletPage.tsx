@@ -5,7 +5,7 @@ import { AlertCircle, ArrowRight, CheckCircle, Loader2, PlusCircle, Wallet } fro
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWallets } from "../hooks/useWallets";
-import { CreateWalletSchema, Currencies, type CreateWalletFormData } from "../validation/walletShema";
+import { CreateWalletSchema, Currencies, type CreateWalletFormData } from "../validation/walletSchema";
 
 
 export const CreateWalletPage = () => {

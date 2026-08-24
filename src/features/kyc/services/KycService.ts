@@ -1,5 +1,5 @@
 import { apiClient } from "../../../lib/axios";
-import type { KycSubmissionFormData } from "../validation/KycShema";
+import type { KycSubmissionFormData } from "../validation/kycSchema";
 
 export interface KycResponse {
   id: string;

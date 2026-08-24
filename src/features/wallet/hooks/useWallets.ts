@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getWallet, topUpWallet, verifyWalletTopUp } from "../services/walletService";
-import type { TopUpFormData, Wallet } from "../validation/walletShema";
+import type { TopUpFormData, Wallet } from "../validation/walletSchema";
 import { toast } from "../../../store/toastStore";
 import { getApiErrorMessage, isDuplicateTransaction } from "../../../lib/apiErrors";
 

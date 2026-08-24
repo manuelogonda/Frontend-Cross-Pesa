@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Currencies } from '../../wallet/validation/walletShema';
+import { Currencies } from '../../wallet/validation/walletSchema';
 
 export const TransferSchema = z.object({
   sourceWalletId: z.string().uuid("Invalid source wallet reference."),

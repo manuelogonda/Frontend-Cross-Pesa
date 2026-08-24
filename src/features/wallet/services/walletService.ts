@@ -1,5 +1,5 @@
 import z from "zod";
-import { WalletSchema, type TopUpFormData, type Wallet } from "../validation/walletShema";
+import { WalletSchema, type TopUpFormData, type Wallet } from "../validation/walletSchema";
 import { apiClient } from "../../../lib/axios";
 import { ledgerEntrySchema, type PaginatedLedgerResponse } from "../../ledger/types";
 
