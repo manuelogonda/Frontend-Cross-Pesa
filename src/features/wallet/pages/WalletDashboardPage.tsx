@@ -4,13 +4,13 @@ import { WalletCard } from "../components/WalletCard";
 import { useNavigate } from "react-router-dom";
 import { useWalletStatement } from "../hooks/useWalletStatement";
 import { LedgerTable } from "../../ledger/components/LedgerTable";
-import { useEffect } from "react";
 
 export const WalletDashboardPage = () => {
   const navigate = useNavigate();
   
-  // 1. Destructure wallet data and refetch handler
-  const { wallet, isLoading: isLoadingWallet, error: walletError, refetch: refetchWallet } = useWallets();
+  // 1. Destructure wallet data (cached by TanStack Query — fresh on mount via
+  //    background refetch of stale data; NO forced second fetch)
+  const { wallet, isLoading: isLoadingWallet, error: walletError } = useWallets();
   
   // 2. Destructure ledger statement data, pagination handlers, and refetch handler
   const { 
@@ -19,15 +19,8 @@ export const WalletDashboardPage = () => {
     isLoading: isLoadingLedger, 
     error: ledgerError,
     nextPage,
-    prevPage,
-    refetch: refetchLedger
+    prevPage
   } = useWalletStatement(5); // Show 5 entries per page for a cleaner dashboard view
-
-  // 3. Force fresh data synchronization whenever the dashboard mounts
-  useEffect(() => {
-    refetchWallet();
-    refetchLedger();
-  }, [refetchWallet, refetchLedger]);
 
   if (isLoadingWallet) {
     return (

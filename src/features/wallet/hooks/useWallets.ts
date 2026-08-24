@@ -1,96 +1,110 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getWallet, topUpWallet, verifyWalletTopUp } from "../services/walletService";
 import type { TopUpFormData, Wallet } from "../validation/walletShema";
-import { ZodError } from "zod";
+import { toast } from "../../../store/toastStore";
+import { getApiErrorMessage, isDuplicateTransaction } from "../../../lib/apiErrors";
+
+/**
+ * Shared cache key. Money-movement flows (transfer, top-up) invalidate this
+ * after success so every mounted consumer refetches automatically.
+ */
+export const WALLET_QUERY_KEY = ['wallet'] as const;
 
 export const useWallets = () => {
-  const [wallet, setWallet] = useState<Wallet | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // States for top-up action
-  const [isTopUpLoading, setIsTopUpLoading] = useState<boolean>(false);
+  const queryClient = useQueryClient();
   const [topUpError, setTopUpError] = useState<string | null>(null);
 
-  const loadWallet = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      // Calls the Zod-validated service function instead of raw Axios
-      const data = await getWallet();
-      setWallet(data);
-    } catch (err: any) {
-      if (err?.response?.status === 404) {
-        // Valid state: The user just registered and hasn't created a wallet yet
-        setWallet(null);
-      } else if (err instanceof ZodError) {
-        console.error("Wallet Schema Validation Error:", err.issues);
-        setError("Received invalid wallet data format from the server.");
-      } else {
-        const message = err.response?.data?.message || 'Failed to fetch wallet. Please check your connection.';
-        setError(message);
+  // ── Server state: the user's single retail wallet ─────────────────────
+  // A 404 is a VALID business state (registered but no wallet yet), so it's
+  // normalized to `null` data rather than surfacing as a query error.
+  const walletQuery = useQuery({
+    queryKey: WALLET_QUERY_KEY,
+    staleTime: 30 * 1000,
+    queryFn: async (): Promise<Wallet | null> => {
+      try {
+        return await getWallet();
+      } catch (err) {
+        if ((err as { response?: { status?: number } })?.response?.status === 404) {
+          return null;
+        }
+        throw err;
       }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    },
+  });
 
- const initiateTopUpAction = async (formData: TopUpFormData) => {
-    setIsTopUpLoading(true);
+  // ── Mutations ──────────────────────────────────────────────────────────
+  const initiateMutation = useMutation({
+    mutationFn: (formData: TopUpFormData) => topUpWallet(formData),
+    onError: (err) => {
+      if (isDuplicateTransaction(err)) {
+        toast.info('A checkout session was already created.');
+        return;
+      }
+      setTopUpError(getApiErrorMessage(err, 'Failed to initiate checkout. Please try again.'));
+    },
+  });
+
+  const verifyMutation = useMutation({
+    mutationFn: (txId: string) => verifyWalletTopUp({ transactionId: txId }),
+  });
+
+  const initiateTopUpAction = async (formData: TopUpFormData): Promise<void> => {
     setTopUpError(null);
-    try {
-      const response = await topUpWallet(formData);
-      
-      // 🟢 Force a complete top-level window location replacement
-      // NOTE: No client state is carried into the redirect — the backend now
-      // derives amount/currency/payer server-side from Flutterwave's verify API.
-      window.location.replace(response.paymentLink);
-    } catch (err: any) {
-      const message = err.response?.data?.message || 'Failed to initiate checkout. Please try again.';
-      setTopUpError(message);
-      setIsTopUpLoading(false);
-    }
+    const response = await initiateMutation.mutateAsync(formData);
+    // 🟢 Force a complete top-level window location replacement.
+    // No client state is carried into the redirect — the backend derives
+    // amount/currency/payer server-side from Flutterwave's verify API.
+    window.location.replace(response.paymentLink);
   };
 
-  const verifyTopUpAction = async (txId: string) => {
-    setIsTopUpLoading(true);
+  const verifyTopUpAction = async (txId: string): Promise<boolean> => {
     setTopUpError(null);
     try {
-      await verifyWalletTopUp({ transactionId: txId });
-      setIsTopUpLoading(false);
+      await verifyMutation.mutateAsync(txId);
+
       // Reload the wallet to get the fresh double-entry ledger balance!
-      await loadWallet();
+      await queryClient.invalidateQueries({ queryKey: WALLET_QUERY_KEY });
       return true;
-    } catch (err: any) {
-      // Backend 400s return { "error": "..." }, e.g.:
+    } catch (err) {
+      if (isDuplicateTransaction(err)) {
+        // HTTP 409: idempotency replay — funds were already credited once.
+        // Friendly heads-up instead of a scary failure banner; refresh anyway.
+        toast.info('This transaction was already processed.');
+        await queryClient.invalidateQueries({ queryKey: WALLET_QUERY_KEY });
+        return true;
+      }
+
+      // Backend verification failures return { "error": "..." }, e.g.:
       // "Payment verification failed." | "Payment does not belong to this account."
-      const message = err.response?.data?.error
-        || err.response?.data?.message
-        || 'Payment verification failed. Please contact support if funds were deducted.';
-      setTopUpError(message);
-      setIsTopUpLoading(false);
+      const serverError =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setTopUpError(
+        serverError ||
+          getApiErrorMessage(err, 'Payment verification failed. Please contact support if funds were deducted.')
+      );
       return false;
     }
   };
 
-  useEffect(() => {
-    loadWallet();
-  }, [loadWallet]);
+  const wallet = walletQuery.data ?? null;
 
   // DERIVED ARRAY: Safely wrap single wallet in an array for list/dropdown consumers
   const walletsList: Wallet[] = wallet ? [wallet] : [];
 
-  return { 
-    wallet, 
+  return {
+    wallet,
     wallets: walletsList, // Fixes TransferForm and ExchangeForm map crashes!
     hasWallet: !!wallet,
-    isLoading, 
-    loading: isLoading,   // Alias for consistency across components
-    error, 
-    refetch: loadWallet,
+    isLoading: walletQuery.isPending,
+    loading: walletQuery.isPending,   // Alias for consistency across components
+    error: walletQuery.error
+      ? getApiErrorMessage(walletQuery.error, 'Failed to fetch wallet. Please check your connection.')
+      : null,
+    refetch: () => walletQuery.refetch(),
     initiateTopUp: initiateTopUpAction,
     verifyTopUp: verifyTopUpAction,
-    isTopUpLoading,
+    isTopUpLoading: initiateMutation.isPending || verifyMutation.isPending,
     topUpError
   };
 };

@@ -1,54 +1,37 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getWalletStatement } from "../services/walletService";
 import type { LedgerEntry } from "../../ledger/types";
-import { ZodError } from "zod";
+import { getApiErrorMessage } from "../../../lib/apiErrors";
 
+/**
+ * Paginated ledger statement for the dashboard.
+ *
+ * Query key family is prefixed with `ledger-statement` so money-movement
+ * flows can invalidate every page at once:
+ *   invalidateQueries({ queryKey: ['ledger-statement'] })
+ * `keepPreviousData` keeps the previous page rendered while the next loads.
+ */
 export const useWalletStatement = (initialSize: number = 10) => {
-  // Data State
-  const [entries, setEntries] = useState<LedgerEntry[]>([]);
-  
-  // Pagination State
-  const [currentPage, setCurrentPage] = useState<number>(0);
-  const [totalPages, setTotalPages] = useState<number>(0);
-  const [totalElements, setTotalElements] = useState<number>(0);
-  const [size, setSize] = useState<number>(initialSize);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [size, setSizeState] = useState(initialSize);
 
-  // Status State
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const statementQuery = useQuery({
+    queryKey: ['ledger-statement', currentPage, size],
+    queryFn: () => getWalletStatement(currentPage, size),
+    placeholderData: keepPreviousData,
+    staleTime: 30 * 1000,
+  });
 
-  const fetchStatement = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await getWalletStatement(currentPage, size);
-      
-      // Content is already contract-parsed by getWalletStatement (ledger/types);
-      // transactionId/walletId nullability is handled by the schema itself.
-      setEntries(data.content);
-      setTotalPages(data.totalPages);
-      setTotalElements(data.totalElements);
-    } catch (err: any) {
-      if (err instanceof ZodError) {
-        // Use err.issues or err.flatten() instead of err.errors
-        console.error("Statement Schema Validation Error:", err.issues || err.flatten());
-        setError("Received invalid ledger data format from the server.");
-      } else {
-        const message = err.response?.data?.message || 'Failed to fetch wallet statement. Please check your connection.';
-        setError(message);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [currentPage, size]);
+  const data = statementQuery.data;
 
-  useEffect(() => {
-    fetchStatement();
-  }, [fetchStatement]);
+  // Content is already contract-parsed by getWalletStatement (ledger/types);
+  // transactionId/walletId nullability is handled by the schema itself.
+  const entries: LedgerEntry[] = data?.content ?? [];
 
   // Pagination Handlers
   const nextPage = () => {
-    if (currentPage < totalPages - 1) {
+    if (currentPage < (data?.totalPages ?? 0) - 1) {
       setCurrentPage((prev) => prev + 1);
     }
   };
@@ -59,23 +42,26 @@ export const useWalletStatement = (initialSize: number = 10) => {
     }
   };
 
-  // Reset to first page (useful if user changes page size or applies a date filter later)
-  const resetPage = () => setCurrentPage(0);
-
   return {
     entries,
     pagination: {
       currentPage,
-      totalPages,
-      totalElements,
-      size
+      totalPages: data?.totalPages ?? 0,
+      totalElements: data?.totalElements ?? 0,
+      size,
     },
-    isLoading,
-    error,
+    isLoading: statementQuery.isPending,
+    error: statementQuery.error
+      ? getApiErrorMessage(statementQuery.error, 'Failed to fetch wallet statement. Please check your connection.')
+      : null,
     nextPage,
     prevPage,
-    resetPage,
-    setSize,
-    refetch: fetchStatement
+    // Reset to first page (useful if user changes page size or applies a date filter later)
+    resetPage: () => setCurrentPage(0),
+    setSize: (newSize: number) => {
+      setSizeState(newSize);
+      setCurrentPage(0);
+    },
+    refetch: () => statementQuery.refetch(),
   };
 };
