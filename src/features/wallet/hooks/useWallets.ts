@@ -94,7 +94,7 @@ export const useWallets = () => {
 
   return {
     wallet,
-    wallets: walletsList, // Fixes TransferForm and ExchangeForm map crashes!
+    wallets: walletsList,
     hasWallet: !!wallet,
     isLoading: walletQuery.isPending,
     loading: walletQuery.isPending,   // Alias for consistency across components

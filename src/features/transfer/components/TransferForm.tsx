@@ -3,10 +3,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTransfer } from "../hooks/useTransfer";
 import { RateDisplayCard } from "../../rates/components/RateDisplayCard";
-import { AlertCircle, ArrowRight, CheckCircle2, ShieldCheck, TrendingUp, User, WalletIcon } from "lucide-react";
+import { AlertCircle, ArrowRight, CheckCircle2, Loader2, ShieldCheck, TrendingUp, User, WalletIcon } from "lucide-react";
 import { TransferSchema, type TransferFormInput } from "../validation/transferSchema";
 import { Currencies } from "../../wallet/validation/walletSchema";
 import { useBeneficiaries } from "../../beneficiaries/hooks/useBeneficiaries";
+import { getTransactionStatusApi } from "../api/transactionApi";
 import { useEffect } from "react";
 
 
@@ -16,6 +17,7 @@ export const TransferForm = () => {
   const {
     beneficiaries,
     isLoading: isLoadingBeneficiaries,
+    error: beneficiariesError,
   } = useBeneficiaries();
 
   // 2. Setup React Hook Form with strict Zod Validation
@@ -35,7 +37,7 @@ export const TransferForm = () => {
     }
   });
 
-  const { execute, isSubmitting, error, successData, reset: resetTransferState } = useTransfer();
+  const { execute, isSubmitting, error, successData, setSuccessData, reset: resetTransferState } = useTransfer();
 
   // Watch form fields for live UI updates
   const watchAmount = watch("amount") || 0;
@@ -57,6 +59,24 @@ export const TransferForm = () => {
       setValue("destinationCurrency", selectedBen.accountCurrency, { shouldValidate: true });
     }
   }, [watchBeneficiaryId, beneficiaries, setValue]);
+
+  // Settlement worker advances PROCESSING -> COMPLETED/FAILED asynchronously
+  // via payout webhooks; poll until terminal state and update the receipt.
+  useEffect(() => {
+    if (!successData) return;
+    const isTerminal = ['COMPLETED', 'FAILED', 'FLAGGED'].includes(successData.status);
+    if (isTerminal) return;
+
+    const intervalId = setInterval(async () => {
+      try {
+        setSuccessData(await getTransactionStatusApi(successData.id));
+      } catch {
+        // Transient poll failure — non-fatal, next tick retries
+      }
+    }, 4000);
+
+    return () => clearInterval(intervalId);
+  }, [successData?.id, successData?.status, setSuccessData]);
 
   const activeSourceCurrency = watch("sourceCurrency") || wallet?.currency || 'USD';
 
@@ -128,6 +148,11 @@ export const TransferForm = () => {
               </option>
             ))}
           </select>
+          {beneficiariesError && (
+            <p className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+              <AlertCircle size={12} /> {beneficiariesError}
+            </p>
+          )}
           {errors.beneficiaryId && <p className="text-red-500 text-xs mt-1.5">{errors.beneficiaryId.message}</p>}
         </div>
 
@@ -196,13 +221,27 @@ export const TransferForm = () => {
       {successData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl border border-green-100 text-center space-y-5 max-w-md w-full p-6 sm:p-8 shadow-2xl relative animate-in zoom-in-95 duration-200">
-            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
-              <CheckCircle2 size={36} />
-            </div>
-            <div>
-              <h3 className="text-2xl font-bold text-slate-900">Transfer Initiated!</h3>
-              <p className="text-sm text-slate-500 mt-1">Funds are on their way to your recipient.</p>
-            </div>
+            {(() => {
+              const s = successData.status;
+              const cfg =
+                s === 'COMPLETED'
+                  ? { icon: CheckCircle2, ring: 'bg-green-100 text-green-600', title: 'Transfer Completed!', sub: 'Funds have arrived at the recipient.' }
+                  : s === 'FAILED'
+                    ? { icon: AlertCircle, ring: 'bg-red-100 text-red-600', title: 'Transfer Failed', sub: 'Funds refunded to your wallet.' }
+                    : { icon: Loader2, ring: 'bg-blue-100 text-blue-600', title: 'Transfer Initiated!', sub: "Money is on its way — we'll update this automatically." };
+              const Icon = cfg.icon;
+              return (
+                <>
+                  <div className={`w-16 h-16 ${cfg.ring} rounded-full flex items-center justify-center mx-auto shadow-inner`}>
+                    <Icon size={36} className={s === 'PROCESSING' || s === 'PENDING' ? 'animate-pulse' : ''} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-slate-900">{cfg.title}</h3>
+                    <p className="text-sm text-slate-500 mt-1">{cfg.sub}</p>
+                  </div>
+                </>
+              );
+            })()}
 
             <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-left space-y-2 text-sm font-mono">
               <div className="flex justify-between text-slate-600">
@@ -219,10 +258,22 @@ export const TransferForm = () => {
               </div>
               <div className="flex justify-between text-slate-600">
                 <span>Status:</span>
-                <span className={`font-bold uppercase ${successData.status === 'COMPLETED' ? 'text-green-600' : 'text-blue-600'}`}>
+                <span className={`font-bold uppercase ${
+                  successData.status === 'COMPLETED' ? 'text-green-600'
+                  : successData.status === 'FAILED' ? 'text-red-600'
+                  : 'text-blue-600 animate-pulse'
+                }`}>
                   {successData.status}
                 </span>
               </div>
+              {(successData.payoutGateway || successData.payoutReference) && (
+                <div className="flex justify-between text-slate-600">
+                  <span>Payout:</span>
+                  <span className="font-bold text-slate-900 break-all text-xs">
+                    {[successData.payoutGateway, successData.payoutReference].filter(Boolean).join(' • ')}
+                  </span>
+                </div>
+              )}
             </div>
 
             <button 

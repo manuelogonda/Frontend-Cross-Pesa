@@ -5,6 +5,7 @@ import { AlertCircle, Edit2, Edit3, Plus, Trash2, Users } from "lucide-react";
 import { BENEFICIARY_TYPES, beneficiarySchema, PAYOUT_METHODS, PAYOUT_PROVIDERS, type BeneficiaryFormData } from "../validation/beneficiarySchema";
 import type { Beneficiary } from "../validation/beneficiarySchema";
 import { Currencies } from "../../wallet/validation/walletSchema";
+import { deriveFromPhone } from "../../../lib/phoneCountry";
 import { useEffect, useState } from "react";
 
 
@@ -43,6 +44,7 @@ export const BeneficiaryPage = () => {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting }
   } = useForm<BeneficiaryFormData>({
     resolver: zodResolver(beneficiarySchema)
@@ -78,6 +80,7 @@ export const BeneficiaryPage = () => {
       city: beneficiary.city || '',
       payoutMethod: beneficiary.payoutMethod as BeneficiaryFormData['payoutMethod'],
       payoutProvider: beneficiary.payoutProvider as BeneficiaryFormData['payoutProvider'],
+      bankCode: beneficiary.bankCode || '',
       accountNumber: beneficiary.accountNumber,
       accountCurrency: beneficiary.accountCurrency as BeneficiaryFormData['accountCurrency'],
     });
@@ -155,7 +158,15 @@ export const BeneficiaryPage = () => {
 
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Phone Number</label>
-              <input {...register("phoneNumber")} placeholder="+254700000000" className={`w-full border p-3 rounded-xl text-sm outline-none focus:ring-2 transition-all ${errors.phoneNumber ? 'border-red-500 focus:ring-red-200' : 'border-slate-200 focus:ring-indigo-500'}`} />
+              <input {...register("phoneNumber")} placeholder="+254700000000"
+                onChange={(e) => {
+                  register("phoneNumber").onChange(e);
+                  const derived = deriveFromPhone(e.target.value, { defaultCountry: "KE" });
+                  if (derived) {
+                    setValue("countryCode", derived.countryCode, { shouldValidate: true });
+                    setValue("accountCurrency", derived.currency, { shouldValidate: true });
+                  }
+                }} className={`w-full border p-3 rounded-xl text-sm outline-none focus:ring-2 transition-all ${errors.phoneNumber ? 'border-red-500 focus:ring-red-200' : 'border-slate-200 focus:ring-indigo-500'}`} />
               {errors.phoneNumber && <p className="text-red-500 text-xs mt-1">{errors.phoneNumber.message}</p>}
             </div>
           </div>
@@ -198,6 +209,20 @@ export const BeneficiaryPage = () => {
               <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Account Number / Phone</label>
               <input {...register("accountNumber")} placeholder="Acc / Phone No" className={`w-full border p-3 rounded-xl text-sm outline-none focus:ring-2 transition-all ${errors.accountNumber ? 'border-red-500 focus:ring-red-200' : 'border-slate-200 focus:ring-indigo-500'}`} />
               {errors.accountNumber && <p className="text-red-500 text-xs mt-1">{errors.accountNumber.message}</p>}
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Bank / Network Code</label>
+              <input {...register("bankCode")} list="payout-bank-codes"
+                placeholder="MPESA / AIRTEL / bank code…"
+                className={`w-full border p-3 rounded-xl text-sm uppercase outline-none focus:ring-2 transition-all ${errors.bankCode ? 'border-red-500 focus:ring-red-200' : 'border-slate-200 focus:ring-indigo-500'}`} />
+              <datalist id="payout-bank-codes">
+                <option value="MPESA">M-Pesa (mobile money)</option>
+                <option value="AIRTEL">Airtel Money</option>
+                <option value="EQUITY_BANK">Equity Bank</option>
+              </datalist>
+              {errors.bankCode && <p className="text-red-500 text-xs mt-1">{errors.bankCode.message}</p>}
+              <p className="text-[9px] text-slate-400 mt-1">Mobile money network or Paystack bank code — required for payouts.</p>
             </div>
 
             <div>
@@ -266,6 +291,11 @@ export const BeneficiaryPage = () => {
                       <div className="overflow-hidden">
                         <p className="font-bold text-slate-900 text-sm truncate">{b.firstName} {b.lastName}</p>
                         <p className="text-xs font-semibold text-indigo-600">{formatEnumString(b.beneficiaryType)}</p>
+                        {!b.bankCode && (
+                          <span className="inline-block bg-amber-100 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded mt-0.5">
+                            PAYOUT SETUP INCOMPLETE — EDIT &amp; RE-SAVE
+                          </span>
+                        )}
                       </div>
                     </div>
                     
@@ -278,6 +308,12 @@ export const BeneficiaryPage = () => {
                         <span className="text-slate-400 uppercase text-[9px] font-bold tracking-wider">Provider</span>
                         <span className="font-medium text-slate-700">{formatEnumString(b.payoutProvider)} ({b.accountCurrency})</span>
                       </p>
+                      {b.bankCode && (
+                        <p className="flex justify-between">
+                          <span className="text-slate-400 uppercase text-[9px] font-bold tracking-wider">Bank Code</span>
+                          <span className="font-medium text-slate-700">{b.bankCode}</span>
+                        </p>
+                      )}
                     </div>
                   </div>
                   

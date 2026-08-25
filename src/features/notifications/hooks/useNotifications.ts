@@ -50,7 +50,8 @@ export const useNotifications = () => {
   return {
     notifications,
     // FIX: was an array before — consumers did `.length` at every call site
-    unreadCount: notifications.filter(git add -A && git commit -m "fix(notifications): unify Zod contract, defensive parsing, numeric unreadCount, visibility-aware RQ polling"(n) => n.status === 'UNREAD').length,
+
+    unreadCount: notifications.filter((n) => n.status === 'UNREAD').length,
     loading: notificationsQuery.isPending,
     error: notificationsQuery.error
       ? getApiErrorMessage(notificationsQuery.error, 'Failed to fetch notifications')

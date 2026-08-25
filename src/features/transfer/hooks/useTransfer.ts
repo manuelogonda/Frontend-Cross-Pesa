@@ -1,6 +1,6 @@
-import { useState } from "react";
-import type { TransferFormData } from "../validation/transferSchema";
-import type { TransactionResponse } from "../types/finance";
+import { useRef, useState } from "react";
+import { v4 as uuidv4 } from 'uuid';
+import type { TransferFormData, TransactionResponse } from "../validation/transferSchema";
 import { executeTransferApi } from "../api/transactionApi";
 import { ZodError } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
@@ -13,6 +13,10 @@ export const useTransfer = () => {
   const [successData, setSuccessData] = useState<TransactionResponse | null>(null);
 
   const queryClient = useQueryClient(); // 2. Initialize the query client
+
+  // Same key across RETRIES of one attempt; regenerated only after the
+  // backend money actually moved (success or 409 duplicate).
+  const idempotencyKeyRef = useRef(uuidv4());
 
   // Shared: money moved (or already had) server-side, so balances must refresh
   const invalidateMoneyQueries = async () => {
@@ -27,8 +31,9 @@ export const useTransfer = () => {
     setSuccessData(null);
 
     try {
-      const response = await executeTransferApi(data);
+      const response = await executeTransferApi(data, idempotencyKeyRef.current);
       setSuccessData(response);
+      idempotencyKeyRef.current = uuidv4(); // next transfer = fresh key
 
       // 🟢 Invalidate queries so the Wallet Card & Ledger auto-refresh with new balance
       await invalidateMoneyQueries();
@@ -42,6 +47,7 @@ export const useTransfer = () => {
         // Friendly heads-up, NOT a failure modal. Balances may have changed
         // if the original attempt landed after this retry began.
         toast.info("This transaction was already processed.");
+        idempotencyKeyRef.current = uuidv4(); // replay confirmed — fresh key
         await invalidateMoneyQueries();
       } else {
         // Status-based classification only (400/422 business rules, network, etc.).
@@ -59,5 +65,5 @@ export const useTransfer = () => {
     setSuccessData(null);
   };
 
-  return { execute, isSubmitting, error, successData, reset };
+  return { execute, isSubmitting, error, successData, setSuccessData, reset };
 };

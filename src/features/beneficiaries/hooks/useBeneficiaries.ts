@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { BeneficiaryFormData } from "../validation/beneficiarySchema";
 import { addBeneficiaryApi, deleteBeneficiaryApi, fetchBeneficiariesApi, updateBeneficiaryApi } from "../api/beneficiaryApi";
 import { ZodError } from "zod";
@@ -61,6 +61,14 @@ export const useBeneficiaries = () => {
       handleError(err);
     }
   };
+
+  // Auto-fetch on mount so every consumer (TransferForm dropdown,
+  // BeneficiaryPage list) gets data without calling load() manually.
+  useEffect(() => {
+    load().catch(() => {
+      // handleError already stored the message in state for consumers to render
+    });
+  }, [load]);
 
   return { 
     beneficiaries, 

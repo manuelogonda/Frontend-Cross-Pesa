@@ -1,17 +1,23 @@
-import { v4 as uuidv4 } from 'uuid';
 import { apiClient } from "../../../lib/axios";
-import type { TransactionResponse } from "../types/finance";
-import { TransactionResponseSchema, type TransferFormData } from "../validation/transferSchema";
+import {
+  TransactionResponseSchema,
+  type TransactionResponse,
+  type TransferFormData,
+} from "../validation/transferSchema";
 
 /**
  * Executes a cross-border transfer to a saved beneficiary.
- * Automatically injects a UUID idempotency key to prevent double-charging 
- * if the user double-clicks the submit button.
+ *
+ * The idempotency key is supplied by the caller (useTransfer) so RETRIES of a
+ * failed attempt reuse the SAME key — the backend dedupes replays with HTTP 409.
  */
-export const executeTransferApi = async (data: TransferFormData): Promise<TransactionResponse> => {
+export const executeTransferApi = async (
+  data: TransferFormData,
+  idempotencyKey: string
+): Promise<TransactionResponse> => {
   const payload = {
     ...data,
-    idempotencyKey: uuidv4(),
+    idempotencyKey,
   };
   
   // PII/financial data: never log transfer payloads
@@ -20,4 +26,14 @@ export const executeTransferApi = async (data: TransferFormData): Promise<Transa
   
   // Strictly enforce the contract before returning to the UI
   return TransactionResponseSchema.parse(responseData);
+};
+
+/**
+ * Polls a single transaction until it reaches a terminal state
+ * (COMPLETED | FAILED | FLAGGED). Transactions start as PROCESSING and are
+ * advanced by the settlement worker / payout webhooks.
+ */
+export const getTransactionStatusApi = async (id: string): Promise<TransactionResponse> => {
+  const { data } = await apiClient.get(`/transactions/${id}`);
+  return TransactionResponseSchema.parse(data);
 };

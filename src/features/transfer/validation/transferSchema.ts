@@ -36,6 +36,9 @@ export const TransactionResponseSchema = z.object({
   
   reference: z.string(),
   status: z.enum(['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'FLAGGED']),
+  // Settlement metadata (Paystack/Flutterwave) — surfaced on receipts & support
+  payoutGateway: z.string().nullable().optional(),
+  payoutReference: z.string().nullable().optional(),
   createdAt: z.string(),
 });
 

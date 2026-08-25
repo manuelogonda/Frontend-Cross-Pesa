@@ -7,6 +7,7 @@ import { registerSchema, type RegisterFormData, type RegisterFormInput } from '.
 import { useRegister } from '../hooks/useAuthMutation';
 import { ApiFieldError } from '../services/authService';
 import { Currencies } from '../../wallet/validation/walletSchema';
+import { deriveFromPhone } from '../../../lib/phoneCountry';
 
 // Fields the backend may reject with per-field validation errors
 const SERVER_FIELD_NAMES = ['firstName', 'lastName', 'email', 'phoneNumber', 'password', 'currency'];
@@ -19,6 +20,7 @@ export const RegisterPage = () => {
     register,
     handleSubmit,
     setError,
+    setValue,
     formState: { errors },
   } = useForm<RegisterFormInput, unknown, RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -80,7 +82,7 @@ export const RegisterPage = () => {
                 </div>
                 {errors.firstName && <p className="mt-1 text-xs text-red-600">{errors.firstName.message}</p>}
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700">Last Name</label>
                 <div className="relative mt-1">
@@ -124,9 +126,22 @@ export const RegisterPage = () => {
                   {...register('phoneNumber')}
                   type="tel"
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-600 focus:border-indigo-600 sm:text-sm"
-                  placeholder="07..."
+                  placeholder="+254712345678"
+                  onChange={(e) => {
+                    // Keep react-hook-form's own change handling wired up
+                    register('phoneNumber').onChange(e);
+
+                    // Auto-detect wallet currency once the number becomes valid
+                    const derived = deriveFromPhone(e.target.value, { defaultCountry: 'KE' });
+                    if (derived) {
+                      setValue('currency', derived.currency, { shouldValidate: true });
+                    }
+                  }}
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                International format (+254…). Wallet currency auto-detects from country.
+              </p>
               {errors.phoneNumber && <p className="mt-1 text-xs text-red-600">{errors.phoneNumber.message}</p>}
             </div>
 
