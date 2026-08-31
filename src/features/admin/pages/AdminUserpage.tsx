@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAdminUsers } from "../hooks/useAdminUsers";
-import type { AdminUser, WalletResponse, WalletStatus } from "../validation/adminSchema";
+import type { AdminUser, KycStatus, WalletResponse, WalletStatus } from "../validation/adminSchema";
 import { fetchUserRetailWalletApi, updateUserKycApi } from "../api/adminApi";
 import { AlertCircle, ChevronLeft, ChevronRight, FileSignature, Search, Wallet, X } from "lucide-react";
 
@@ -20,7 +20,7 @@ export const AdminUsersPage = () => {
   // 2. UI-only state remains in the component
   const [kycModalUser, setKycModalUser] = useState<AdminUser | null>(null);
   const [kycForm, setKycForm] = useState({
-    kycStatus: 'PENDING',
+    kycStatus: 'PENDING' as KycStatus,
     kycLevel: 1,
     adminNotes: ''
   });
@@ -120,8 +120,8 @@ export const AdminUsersPage = () => {
   const openKycModal = (user: AdminUser) => {
     setKycModalUser(user);
     setKycForm({
-      kycStatus: user.kycStatus || 'PENDING',
-      kycLevel: user.kycLevel || 1,
+      kycStatus: user.kycStatus ?? 'PENDING',
+      kycLevel: user.kycLevel ?? 1,
       adminNotes: ''
     });
   };
@@ -135,7 +135,7 @@ export const AdminUsersPage = () => {
         kycModalUser.id, 
         kycForm.kycStatus, 
         kycForm.kycLevel, 
-        kycForm.adminNotes
+        kycForm.adminNotes.trim()
       );
       setKycModalUser(null);
       refresh(); // Refresh the list from the hook to get updated data
@@ -271,7 +271,7 @@ export const AdminUsersPage = () => {
                 <select 
                   className="w-full mt-1 p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" 
                   value={kycForm.kycStatus} 
-                  onChange={(e) => setKycForm({...kycForm, kycStatus: e.target.value})}
+                  onChange={(e) => setKycForm({...kycForm, kycStatus: e.target.value as KycStatus})}
                 >
                   <option value="PENDING">PENDING</option>
                   <option value="APPROVED">APPROVED</option>

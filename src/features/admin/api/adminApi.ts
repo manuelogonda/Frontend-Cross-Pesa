@@ -16,6 +16,7 @@ import {
   PaginatedAdminUsersSchema,
   PaginatedLedgerEntriesSchema,
   PaginatedWalletsSchema,
+  UpdateKycRequestSchema,
   WalletResponseSchema,
   type AdminMessageResponse,
   type DashboardMetrics,
@@ -27,6 +28,7 @@ import {
   type StepUpChallengeResponse,
   type StepUpVerifyRequest,
   type StepUpVerifyResponse,
+  type UpdateKycRequest,
   type TreasuryRebalance,
   type WalletResponse,
   type WalletStatus,
@@ -111,15 +113,17 @@ export const updateUserWalletStatusApi = async (
  */
 export const updateUserKycApi = async (
   userId: string,
-  kycStatus: string,
+  kycStatus: UpdateKycRequest["kycStatus"],
   kycLevel: number,
-  adminNotes?: string
+  adminNotes: string
 ): Promise<void> => {
-  await apiClient.put(`/admin/users/${userId}/kyc`, {
+  const payload = UpdateKycRequestSchema.parse({
     kycStatus,
     kycLevel,
     adminNotes,
   });
+
+  await apiClient.put(`/admin/users/${userId}/kyc`, payload);
 };
 
 /**

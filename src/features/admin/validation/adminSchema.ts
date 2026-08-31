@@ -74,6 +74,12 @@ export const KycReviewRequestSchema = z.object({
   rejectionReason: z.string().optional(),
 });
 
+export const UpdateKycRequestSchema = z.object({
+  kycStatus: KycStatusSchema,
+  kycLevel: z.number().int().positive(),
+  adminNotes: z.string().min(1, "Admin notes are required"),
+});
+
 export const StepUpChallengeRequestSchema = z.object({
   action: StepUpActionSchema,
   context: z.string().min(1),
@@ -218,6 +224,7 @@ export type EntryClass = z.infer<typeof EntryClassSchema>;
 
 export type AdminUser = z.infer<typeof AdminUserSchema>;
 export type KycReviewRequest = z.infer<typeof KycReviewRequestSchema>;
+export type UpdateKycRequest = z.infer<typeof UpdateKycRequestSchema>;
 export type WalletResponse = z.infer<typeof WalletResponseSchema>;
 export type TreasuryRebalance = z.infer<typeof TreasuryRebalanceSchema>;
 export type StepUpChallengeRequest = z.infer<typeof StepUpChallengeRequestSchema>;
