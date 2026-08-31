@@ -4,6 +4,7 @@ import { getWallet, topUpWallet, verifyWalletTopUp } from "../services/walletSer
 import type { TopUpFormData, Wallet } from "../validation/walletSchema";
 import { toast } from "../../../store/toastStore";
 import { getApiErrorMessage, isDuplicateTransaction } from "../../../lib/apiErrors";
+import { NOTIFICATIONS_QUERY_KEY } from "../../notifications/hooks/useNotifications";
 
 /**
  * Shared cache key. Money-movement flows (transfer, top-up) invalidate this
@@ -58,20 +59,27 @@ export const useWallets = () => {
     window.location.replace(response.paymentLink);
   };
 
+  // Shared for both success and 409-replay paths: money moved server-side, so
+  // balances AND the backend-generated top-up notification must refresh now.
+  const refreshMoneyQueries = async () => {
+    await queryClient.invalidateQueries({ queryKey: WALLET_QUERY_KEY });
+    await queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
+  };
+
   const verifyTopUpAction = async (txId: string): Promise<boolean> => {
     setTopUpError(null);
     try {
       await verifyMutation.mutateAsync(txId);
 
       // Reload the wallet to get the fresh double-entry ledger balance!
-      await queryClient.invalidateQueries({ queryKey: WALLET_QUERY_KEY });
+      await refreshMoneyQueries();
       return true;
     } catch (err) {
       if (isDuplicateTransaction(err)) {
         // HTTP 409: idempotency replay — funds were already credited once.
         // Friendly heads-up instead of a scary failure banner; refresh anyway.
         toast.info('This transaction was already processed.');
-        await queryClient.invalidateQueries({ queryKey: WALLET_QUERY_KEY });
+        await refreshMoneyQueries();
         return true;
       }
 

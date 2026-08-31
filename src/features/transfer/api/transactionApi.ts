@@ -1,4 +1,5 @@
 import { apiClient } from "../../../lib/axios";
+import { STEP_UP_TOKEN_HEADER } from "../../../lib/stepUp";
 import {
   TransactionResponseSchema,
   type TransactionResponse,
@@ -13,7 +14,8 @@ import {
  */
 export const executeTransferApi = async (
   data: TransferFormData,
-  idempotencyKey: string
+  idempotencyKey: string,
+  stepUpToken?: string
 ): Promise<TransactionResponse> => {
   const payload = {
     ...data,
@@ -22,7 +24,11 @@ export const executeTransferApi = async (
   
   // PII/financial data: never log transfer payloads
 
-  const { data: responseData } = await apiClient.post('/transactions/send', payload);
+  const { data: responseData } = await apiClient.post('/transactions/send', payload, stepUpToken ? {
+    headers: {
+      [STEP_UP_TOKEN_HEADER]: stepUpToken,
+    },
+  } : undefined);
   
   // Strictly enforce the contract before returning to the UI
   return TransactionResponseSchema.parse(responseData);

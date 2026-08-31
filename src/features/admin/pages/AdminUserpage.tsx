@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useAdminUsers } from "../hooks/useAdminUsers";
-import type { AdminUser, WalletStatus } from "../validation/adminSchema";
-import { updateUserKycApi } from "../api/adminApi";
-import { AlertCircle, Ban, ChevronLeft, ChevronRight, FileSignature, Search, Shield, X } from "lucide-react";
+import type { AdminUser, WalletResponse, WalletStatus } from "../validation/adminSchema";
+import { fetchUserRetailWalletApi, updateUserKycApi } from "../api/adminApi";
+import { AlertCircle, ChevronLeft, ChevronRight, FileSignature, Search, Wallet, X } from "lucide-react";
 
 export const AdminUsersPage = () => {
   // 1. Delegate complex state and fetching to the custom hook
@@ -11,7 +11,7 @@ export const AdminUsersPage = () => {
     pagination, 
     nextPage, 
     prevPage, 
-    changeUserStatus, 
+    changeWalletStatus, 
     loading, 
     error, 
     refresh 
@@ -24,15 +24,96 @@ export const AdminUsersPage = () => {
     kycLevel: 1,
     adminNotes: ''
   });
+  const [walletModalUser, setWalletModalUser] = useState<AdminUser | null>(null);
+  const [walletData, setWalletData] = useState<WalletResponse | null>(null);
+  const [walletForm, setWalletForm] = useState({
+    status: 'ACTIVE' as WalletStatus,
+    reason: 'Manual review by admin'
+  });
+  const [walletLoading, setWalletLoading] = useState(false);
+  const [walletSaving, setWalletSaving] = useState(false);
+  const [walletError, setWalletError] = useState<string | null>(null);
 
-  const handleStatusChange = async (userId: string, currentStatus: WalletStatus) => {
-    const newStatus: WalletStatus = currentStatus === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
-    
-    if (!window.confirm(`Are you sure you want to change this user's wallet status to ${newStatus}?`)) return;
-    
-    const result = await changeUserStatus(userId, newStatus, `Manual review by admin`);
-    if (!result.success) {
-      alert(`Failed to update status: ${result.error}`);
+  const openWalletModal = async (user: AdminUser) => {
+    setWalletModalUser(user);
+    setWalletLoading(true);
+    setWalletError(null);
+    setWalletData(null);
+    setWalletForm({
+      status: 'ACTIVE',
+      reason: 'Manual review by admin'
+    });
+
+    try {
+      const wallet = await fetchUserRetailWalletApi(user.id);
+      setWalletData(wallet);
+      setWalletForm({
+        status: wallet.status,
+        reason: 'Manual review by admin'
+      });
+    } catch (err: any) {
+      setWalletError(err.response?.data?.message || "Failed to load wallet details");
+    } finally {
+      setWalletLoading(false);
+    }
+  };
+
+  const closeWalletModal = () => {
+    setWalletModalUser(null);
+    setWalletData(null);
+    setWalletError(null);
+    setWalletLoading(false);
+    setWalletSaving(false);
+  };
+
+  const submitWalletStatus = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!walletModalUser || !walletData) return;
+
+    if (!window.confirm(`Are you sure you want to change this wallet to ${walletForm.status}?`)) return;
+
+    setWalletSaving(true);
+    try {
+      const result = await changeWalletStatus(walletModalUser.id, walletForm.status, walletForm.reason);
+      if (!result.success) {
+        alert(`Failed to update wallet status: ${result.error}`);
+        return;
+      }
+
+      const updatedWallet = await fetchUserRetailWalletApi(walletModalUser.id);
+      setWalletData(updatedWallet);
+      setWalletForm((current) => ({ ...current, status: updatedWallet.status }));
+      await refresh();
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to update wallet status");
+    } finally {
+      setWalletSaving(false);
+    }
+  };
+
+  const getUserStatusClass = (status: string) => {
+    switch (status) {
+      case 'ACTIVE':
+        return 'bg-green-100 text-green-700';
+      case 'SUSPENDED':
+        return 'bg-amber-100 text-amber-700';
+      case 'LOCKED':
+        return 'bg-red-100 text-red-700';
+      default:
+        return 'bg-slate-100 text-slate-700';
+    }
+  };
+
+  const getWalletStatusClass = (status: string) => {
+    switch (status) {
+      case 'ACTIVE':
+        return 'bg-green-100 text-green-700';
+      case 'FROZEN':
+        return 'bg-slate-100 text-slate-700';
+      case 'SUSPENDED':
+        return 'bg-red-100 text-red-700';
+      default:
+        return 'bg-slate-100 text-slate-700';
     }
   };
 
@@ -94,7 +175,7 @@ export const AdminUsersPage = () => {
               <tr>
                 <th className="p-4 font-medium">Customer</th>
                 <th className="p-4 font-medium">ID Info</th>
-                <th className="p-4 font-medium">Wallet Status</th>
+                <th className="p-4 font-medium">Account Status</th>
                 <th className="p-4 font-medium">KYC Level</th>
                 <th className="p-4 font-medium text-right">Actions</th>
               </tr>
@@ -115,7 +196,7 @@ export const AdminUsersPage = () => {
                       {user.idType || 'ID'}: <span className="font-mono">{user.idNumberMasked || 'N/A'}</span>
                     </td>
                     <td className="p-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${user.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getUserStatusClass(user.status)}`}>
                         {user.status}
                       </span>
                     </td>
@@ -135,11 +216,11 @@ export const AdminUsersPage = () => {
                           <FileSignature size={16} />
                         </button>
                         <button 
-                          onClick={() => handleStatusChange(user.id, user.status as any)}
-                          className={`p-1.5 rounded transition-colors ${user.status === 'ACTIVE' ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`} 
-                          title={user.status === 'ACTIVE' ? 'Suspend User Wallet' : 'Activate User Wallet'}
+                          onClick={() => openWalletModal(user)}
+                          className="p-1.5 rounded transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100" 
+                          title="Manage Wallet"
                         >
-                          {user.status === 'ACTIVE' ? <Ban size={16} /> : <Shield size={16} />}
+                          <Wallet size={16} />
                         </button>
                       </div>
                     </td>
@@ -224,6 +305,98 @@ export const AdminUsersPage = () => {
                 className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
               >
                 Update Profile
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {walletModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50">
+              <div>
+                <h3 className="font-bold text-slate-800">Manage Wallet</h3>
+                <p className="text-xs text-slate-500">
+                  {walletModalUser.firstName} {walletModalUser.lastName} · Account status {walletModalUser.status}
+                </p>
+              </div>
+              <button onClick={closeWalletModal} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={submitWalletStatus} className="p-6 space-y-4">
+              {walletLoading ? (
+                <div className="py-8 text-center text-slate-500">Loading wallet details...</div>
+              ) : walletError ? (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+                  {walletError}
+                </div>
+              ) : walletData ? (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="rounded-lg border border-slate-200 p-4">
+                      <p className="text-xs uppercase tracking-wide text-slate-500">Wallet Status</p>
+                      <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${getWalletStatusClass(walletData.status)}`}>
+                        {walletData.status}
+                      </span>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 p-4">
+                      <p className="text-xs uppercase tracking-wide text-slate-500">Currency</p>
+                      <p className="mt-2 text-lg font-semibold text-slate-800">{walletData.currency}</p>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 p-4">
+                      <p className="text-xs uppercase tracking-wide text-slate-500">Balance</p>
+                      <p className="mt-2 text-lg font-semibold text-slate-800">
+                        {walletData.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 p-4">
+                      <p className="text-xs uppercase tracking-wide text-slate-500">Available</p>
+                      <p className="mt-2 text-lg font-semibold text-slate-800">
+                        {walletData.availableBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  </div>
+
+              <div className="rounded-lg border border-slate-200 p-4 space-y-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Wallet Type</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-800">{walletData.walletType}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700">New Wallet Status</label>
+                    <select
+                        className="w-full mt-1 p-2 border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+                        value={walletForm.status}
+                        onChange={(e) => setWalletForm({ ...walletForm, status: e.target.value as WalletStatus })}
+                      >
+                        <option value="ACTIVE">ACTIVE</option>
+                        <option value="FROZEN">FROZEN</option>
+                        <option value="SUSPENDED">SUSPENDED</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700">Audit Reason</label>
+                      <textarea
+                        required
+                        className="w-full mt-1 p-2 border border-slate-300 rounded-lg h-24 outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="Reason for the wallet status change..."
+                        value={walletForm.reason}
+                        onChange={(e) => setWalletForm({ ...walletForm, reason: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : null}
+
+              <button
+                type="submit"
+                disabled={walletLoading || walletSaving || !walletData || walletForm.status === walletData.status}
+                className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {walletSaving ? "Updating..." : "Update Wallet Status"}
               </button>
             </form>
           </div>

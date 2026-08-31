@@ -3,7 +3,44 @@
 // ==========================================
 
 import { apiClient } from "../../../lib/axios";
-import { DashboardMetricsSchema, PaginatedAdminTransactionsSchema, PaginatedAdminUsersSchema, PaginatedLedgerEntriesSchema, PaginatedWalletsSchema, WalletResponseSchema, type DashboardMetrics, type PaginatedAdminTransactions, type PaginatedAdminUsers, type PaginatedLedgerEntries, type PaginatedWallets, type TreasuryRebalance, type WalletResponse, type WalletStatus, type WalletType } from "../validation/adminSchema";
+import {
+  buildStepUpContext,
+  requestStepUpChallengeApi,
+  verifyStepUpChallengeApi,
+  STEP_UP_TOKEN_HEADER,
+} from "../../../lib/stepUp";
+import {
+  AdminMessageResponseSchema,
+  DashboardMetricsSchema,
+  PaginatedAdminTransactionsSchema,
+  PaginatedAdminUsersSchema,
+  PaginatedLedgerEntriesSchema,
+  PaginatedWalletsSchema,
+  WalletResponseSchema,
+  type AdminMessageResponse,
+  type DashboardMetrics,
+  type PaginatedAdminTransactions,
+  type PaginatedAdminUsers,
+  type PaginatedLedgerEntries,
+  type PaginatedWallets,
+  type StepUpChallengeRequest,
+  type StepUpChallengeResponse,
+  type StepUpVerifyRequest,
+  type StepUpVerifyResponse,
+  type TreasuryRebalance,
+  type WalletResponse,
+  type WalletStatus,
+  type WalletType,
+} from "../validation/adminSchema";
+
+export const buildTreasuryRebalanceContext = (payload: TreasuryRebalance): string =>
+  buildStepUpContext([
+    ["sourceCurrency", payload.sourceCurrency],
+    ["withdrawAmount", payload.withdrawAmount],
+    ["targetCurrency", payload.targetCurrency],
+    ["depositAmount", payload.depositAmount],
+    ["notes", payload.notes],
+  ]);
 
 /**
  * Fetches high-level metrics for the admin overview dashboard.
@@ -57,7 +94,7 @@ export const fetchAdminUsersApi = async (
  * Updates a user's retail wallet status (e.g., ACTIVE, FROZEN, SUSPENDED).
  * Maps directly to AdminUserOpsController in Spring Boot.
  */
-export const updateUserStatusApi = async (
+export const updateUserWalletStatusApi = async (
   userId: string,
   status: WalletStatus,
   reason?: string
@@ -109,6 +146,24 @@ export const fetchUserLedgerApi = async (
   return PaginatedLedgerEntriesSchema.parse(data);
 };
 
+/**
+ * Requests an OTP challenge for sensitive treasury actions.
+ */
+export const requestTreasuryStepUpChallengeApi = async (
+  payload: StepUpChallengeRequest
+): Promise<StepUpChallengeResponse> => {
+  return requestStepUpChallengeApi(payload);
+};
+
+/**
+ * Verifies the OTP challenge and exchanges it for a one-time treasury token.
+ */
+export const verifyTreasuryStepUpChallengeApi = async (
+  payload: StepUpVerifyRequest
+): Promise<StepUpVerifyResponse> => {
+  return verifyStepUpChallengeApi(payload);
+};
+
 // ==========================================
 // 4. TREASURY & LIQUIDITY POOL API
 // ==========================================
@@ -133,8 +188,19 @@ export const fetchSystemWalletsApi = async (
  * Interacts with the backend SystemWalletEngine double-entry ledger sequence.
  */
 export const executeTreasuryRebalanceApi = async (
-  payload: TreasuryRebalance
-): Promise<{ message: string }> => {
-  const { data } = await apiClient.post("/admin/treasury/rebalance", payload);
-  return data;
+  payload: TreasuryRebalance,
+  stepUpToken?: string
+): Promise<AdminMessageResponse> => {
+  const { data } = await apiClient.post(
+    "/admin/treasury/rebalance",
+    payload,
+    stepUpToken
+      ? {
+          headers: {
+            [STEP_UP_TOKEN_HEADER]: stepUpToken,
+          },
+        }
+      : undefined
+  );
+  return AdminMessageResponseSchema.parse(data);
 };

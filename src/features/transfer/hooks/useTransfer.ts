@@ -4,8 +4,15 @@ import type { TransferFormData, TransactionResponse } from "../validation/transf
 import { executeTransferApi } from "../api/transactionApi";
 import { ZodError } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
+import { NOTIFICATIONS_QUERY_KEY } from "../../notifications/hooks/useNotifications";
+import { WALLET_QUERY_KEY } from "../../wallet/hooks/useWallets";
 import { toast } from "../../../store/toastStore";
 import { getApiErrorMessage, isDuplicateTransaction } from "../../../lib/apiErrors";
+
+// Shared cache keys — money-movement flows (transfer form settlement polling,
+// top-up verification) reuse these so every consumer refetches consistently.
+export const LEDGER_STATEMENT_QUERY_KEY = ['ledger-statement'] as const;
+export const TRANSACTION_HISTORY_QUERY_KEY = ['transaction-history'] as const;
 
 export const useTransfer = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,20 +25,25 @@ export const useTransfer = () => {
   // backend money actually moved (success or 409 duplicate).
   const idempotencyKeyRef = useRef(uuidv4());
 
+  const getIdempotencyKey = () => idempotencyKeyRef.current;
+
   // Shared: money moved (or already had) server-side, so balances must refresh
   const invalidateMoneyQueries = async () => {
-    await queryClient.invalidateQueries({ queryKey: ['wallet'] });
-    await queryClient.invalidateQueries({ queryKey: ['ledger-statement'] });
-    await queryClient.invalidateQueries({ queryKey: ['transaction-history'] });
+    await queryClient.invalidateQueries({ queryKey: WALLET_QUERY_KEY });
+    await queryClient.invalidateQueries({ queryKey: LEDGER_STATEMENT_QUERY_KEY });
+    await queryClient.invalidateQueries({ queryKey: TRANSACTION_HISTORY_QUERY_KEY });
+    // Backend created a transaction notification server-side — refresh the
+    // bell immediately instead of waiting for the next poll tick.
+    await queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
   };
 
-  const execute = async (data: TransferFormData) => {
+  const execute = async (data: TransferFormData, stepUpToken?: string) => {
     setIsSubmitting(true);
     setError(null);
     setSuccessData(null);
 
     try {
-      const response = await executeTransferApi(data, idempotencyKeyRef.current);
+      const response = await executeTransferApi(data, idempotencyKeyRef.current, stepUpToken);
       setSuccessData(response);
       idempotencyKeyRef.current = uuidv4(); // next transfer = fresh key
 
@@ -65,5 +77,5 @@ export const useTransfer = () => {
     setSuccessData(null);
   };
 
-  return { execute, isSubmitting, error, successData, setSuccessData, reset };
+  return { execute, isSubmitting, error, successData, setSuccessData, reset, getIdempotencyKey };
 };

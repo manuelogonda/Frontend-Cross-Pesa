@@ -3,7 +3,8 @@ import { z } from 'zod';
 // Exact matches to Java Enums
 export const BENEFICIARY_TYPES = ['INDIVIDUAL', 'ORGANIZATION', 'BUSINESS'] as const;
 export const PAYOUT_METHODS = ['BANK_TRANSFER', 'MOBILE_MONEY', 'CARD_PAYMENT'] as const;
-export const PAYOUT_PROVIDERS = ['MPESA', 'EQUITY_BANK', 'VISA', 'MASTERCARD', 'PAYSTACK'] as const;
+
+export const PAYOUT_PROVIDERS = ['MPESA', 'EQUITY_BANK', 'VISA', 'MASTERCARD'] as const;
 export const CURRENCIES = ['KES', 'USD', 'CNY', 'JPY', 'GBP', 'CAD', 'AUD', 'PKR', 'AED', 'SAR', 'EUR', 'SEK'] as const;
 
 export const beneficiarySchema = z.object({
@@ -48,8 +49,10 @@ export const beneficiarySchema = z.object({
   // @NotNull
   payoutProvider: z.enum(PAYOUT_PROVIDERS, "Payout provider is required"),
 
-  // NEW (Paystack): network code (MPESA/AIRTEL) for mobile money, or the
-  // numeric nuban bank code for bank transfers — routes the payout dispatch.
+
+
+  // Flutterwave payout routing — network code (MPS/ATL/MTN) for mobile money,
+  // or numeric bank code (e.g. 058 GTB) for bank transfers.
   bankCode: z.string()
     .min(1, "Bank or network code is required")
     .max(20, "Bank code cannot exceed 20 characters"),
@@ -82,7 +85,6 @@ export const BeneficiaryResponseSchema = z.object({
   city: z.string().nullable().optional(),
   payoutMethod: z.enum(PAYOUT_METHODS),
   // Backend adds providers (e.g. PAYSTACK) faster than we release builds.
-  // READS stay tolerant (any string renders fine via formatEnumString);
   // WRITES stay strict through the form-level PAYOUT_PROVIDERS enum above.
   payoutProvider: z.string(),
   // Legacy rows predate bank_code — they parse fine but fail at payout

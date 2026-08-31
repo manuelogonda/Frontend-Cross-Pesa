@@ -1,12 +1,17 @@
 import { useBeneficiaries } from "../hooks/useBeneficiaries";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, Edit2, Edit3, Plus, Trash2, Users } from "lucide-react";
+import { AlertCircle, CheckCircle2, Edit2, Edit3, Plus, Trash2, Users } from "lucide-react";
 import { BENEFICIARY_TYPES, beneficiarySchema, PAYOUT_METHODS, PAYOUT_PROVIDERS, type BeneficiaryFormData } from "../validation/beneficiarySchema";
 import type { Beneficiary } from "../validation/beneficiarySchema";
 import { Currencies } from "../../wallet/validation/walletSchema";
 import { deriveFromPhone } from "../../../lib/phoneCountry";
+import { usePayoutInstitutions } from "../hooks/usePayoutsInstitutions";
 import { useEffect, useState } from "react";
+import { StepUpCodeModal } from "../../../components/ui/StepUpCodeModal";
+import { buildStepUpContext, requestStepUpChallengeApi, verifyStepUpChallengeApi } from "../../../lib/stepUp";
+import type { StepUpAction, StepUpChallengeResponse } from "../../admin/validation/adminSchema";
+import { toast } from "../../../store/toastStore";
 
 
 
@@ -24,7 +29,6 @@ export const BeneficiaryPage = () => {
     add, 
     update, 
     remove,
-    refetch 
   } = useBeneficiaries();
 
   useEffect(() => {
@@ -32,6 +36,23 @@ export const BeneficiaryPage = () => {
   }, [load]);
   
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<
+    | { kind: "create"; payload: BeneficiaryFormData }
+    | { kind: "update"; beneficiaryId: string; payload: BeneficiaryFormData }
+    | { kind: "delete"; beneficiaryId: string }
+    | null
+  >(null);
+  const [stepUpModalOpen, setStepUpModalOpen] = useState(false);
+  const [stepUpChallenge, setStepUpChallenge] = useState<StepUpChallengeResponse | null>(null);
+  const [stepUpCode, setStepUpCode] = useState("");
+  const [stepUpRequesting, setStepUpRequesting] = useState(false);
+  const [stepUpVerifying, setStepUpVerifying] = useState(false);
+  const [stepUpError, setStepUpError] = useState<string | null>(null);
+  const [pageFeedback, setPageFeedback] = useState<{
+    type: "success" | "error";
+    title: string;
+    message: string;
+  } | null>(null);
 
   // Safely normalize rawBeneficiaries whether it's a raw array or a Spring Page object ({ content: [...] })
   const beneficiaryList: Beneficiary[] = Array.isArray(rawBeneficiaries)
@@ -45,25 +66,213 @@ export const BeneficiaryPage = () => {
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors, isSubmitting }
   } = useForm<BeneficiaryFormData>({
     resolver: zodResolver(beneficiarySchema)
   });
 
+  const buildBeneficiaryCreateContext = (payload: BeneficiaryFormData) =>
+    buildStepUpContext([
+      ["firstName", payload.firstName],
+      ["lastName", payload.lastName],
+      ["beneficiaryType", payload.beneficiaryType],
+      ["email", payload.email],
+      ["phoneNumber", payload.phoneNumber],
+      ["countryCode", payload.countryCode],
+      ["city", payload.city],
+      ["payoutMethod", payload.payoutMethod],
+      ["payoutProvider", payload.payoutProvider],
+      ["accountNumber", payload.accountNumber],
+      ["bankCode", payload.bankCode],
+      ["accountCurrency", payload.accountCurrency],
+    ]);
+
+  const buildBeneficiaryUpdateContext = (beneficiaryId: string, payload: BeneficiaryFormData) =>
+    buildStepUpContext([
+      ["beneficiaryId", beneficiaryId],
+      ["firstName", payload.firstName],
+      ["lastName", payload.lastName],
+      ["beneficiaryType", payload.beneficiaryType],
+      ["email", payload.email],
+      ["phoneNumber", payload.phoneNumber],
+      ["countryCode", payload.countryCode],
+      ["city", payload.city],
+      ["payoutMethod", payload.payoutMethod],
+      ["payoutProvider", payload.payoutProvider],
+      ["accountNumber", payload.accountNumber],
+      ["bankCode", payload.bankCode],
+      ["accountCurrency", payload.accountCurrency],
+    ]);
+
+  const buildBeneficiaryDeleteContext = (beneficiaryId: string) =>
+    buildStepUpContext([["beneficiaryId", beneficiaryId]]);
+
+  const requestBeneficiaryChallenge = async (
+    action: StepUpAction,
+    context: string,
+    nextAction: NonNullable<typeof pendingAction>
+  ) => {
+    setStepUpRequesting(true);
+    setStepUpError(null);
+    setPendingAction(nextAction);
+    try {
+      const challenge = await requestStepUpChallengeApi({ action, context });
+      setStepUpChallenge(challenge);
+      setStepUpCode("");
+      setStepUpModalOpen(true);
+      setPageFeedback(null);
+    } catch (err: any) {
+      setStepUpChallenge(null);
+      setStepUpModalOpen(true);
+      const message = err.response?.data?.message || "Failed to request step-up challenge";
+      setStepUpError(message);
+      setPageFeedback({ type: "error", title: "Verification required", message });
+      toast.error(message);
+    } finally {
+      setStepUpRequesting(false);
+    }
+  };
+
+  const closeStepUpModal = () => {
+    setStepUpModalOpen(false);
+    setStepUpChallenge(null);
+    setStepUpCode("");
+    setStepUpRequesting(false);
+    setStepUpVerifying(false);
+    setStepUpError(null);
+    setPendingAction(null);
+  };
+
+  const raiseBeneficiaryFeedback = (
+    type: "success" | "error",
+    title: string,
+    message: string
+  ) => {
+    setPageFeedback({ type, title, message });
+    if (type === "success") {
+      toast.success(message);
+    } else {
+      toast.error(message);
+    }
+  };
+
+  const requestNewStepUpCode = async () => {
+    if (!pendingAction) return;
+
+    if (pendingAction.kind === "create") {
+      await requestBeneficiaryChallenge(
+        "BENEFICIARY_CREATE",
+        buildBeneficiaryCreateContext(pendingAction.payload),
+        pendingAction
+      );
+      return;
+    }
+
+    if (pendingAction.kind === "update") {
+      await requestBeneficiaryChallenge(
+        "BENEFICIARY_UPDATE",
+        buildBeneficiaryUpdateContext(pendingAction.beneficiaryId, pendingAction.payload),
+        pendingAction
+      );
+      return;
+    }
+
+    await requestBeneficiaryChallenge(
+      "BENEFICIARY_DELETE",
+      buildBeneficiaryDeleteContext(pendingAction.beneficiaryId),
+      pendingAction
+    );
+  };
+
+  const submitStepUpCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stepUpChallenge || !pendingAction) return;
+
+    setStepUpVerifying(true);
+    setStepUpError(null);
+
+    try {
+      const verification = await verifyStepUpChallengeApi({
+        challengeId: stepUpChallenge.challengeId,
+        code: stepUpCode.trim(),
+      });
+
+      const action = pendingAction;
+
+      if (action.kind === "create") {
+        await add(action.payload, verification.stepUpToken);
+        reset();
+        setEditingId(null);
+        raiseBeneficiaryFeedback(
+          "success",
+          "Beneficiary saved",
+          `${action.payload.firstName} ${action.payload.lastName} was added successfully.`
+        );
+      } else if (action.kind === "update") {
+        await update(action.beneficiaryId, action.payload, verification.stepUpToken);
+        reset();
+        setEditingId(null);
+        raiseBeneficiaryFeedback(
+          "success",
+          "Beneficiary updated",
+          `${action.payload.firstName} ${action.payload.lastName} was updated successfully.`
+        );
+      } else {
+        await remove(action.beneficiaryId, verification.stepUpToken);
+        if (editingId === action.beneficiaryId) {
+          reset();
+          setEditingId(null);
+        }
+        raiseBeneficiaryFeedback("success", "Beneficiary deleted", "The beneficiary was removed successfully.");
+      }
+
+      closeStepUpModal();
+    } catch (err: any) {
+      const message = err.response?.data?.message || "Step-up verification failed";
+      setStepUpError(message);
+      setPageFeedback({ type: "error", title: "Beneficiary action failed", message });
+      toast.error(message);
+    } finally {
+      setStepUpVerifying(false);
+    }
+  };
+
+  // Live Flutterwave bank/network codes for the payout country.
+  // The selected institution's code becomes bankCode in the payload.
+  const watchCountryCode = watch("countryCode");
+  const {
+    institutions: payoutInstitutions,
+    isLoading: institutionsLoading,
+    error: institutionsError,
+  } = usePayoutInstitutions(watchCountryCode);
+
+  // Country changed → previously selected code may no longer route payouts
+  useEffect(() => {
+    setValue("bankCode", "");
+  }, [watchCountryCode, setValue]);
+
   const onSubmit = async (formData: BeneficiaryFormData) => {
     try {
       if (editingId) {
-        await update(editingId, formData);
-        setEditingId(null);
+        await requestBeneficiaryChallenge(
+          "BENEFICIARY_UPDATE",
+          buildBeneficiaryUpdateContext(editingId, formData),
+          { kind: "update", beneficiaryId: editingId, payload: formData }
+        );
       } else {
-        await add(formData);
+        await requestBeneficiaryChallenge(
+          "BENEFICIARY_CREATE",
+          buildBeneficiaryCreateContext(formData),
+          { kind: "create", payload: formData }
+        );
       }
-      reset(); 
-      refetch?.(); 
     } catch (err) {
       // API error handled by hook
     }
   };
+
+  const clearPageFeedback = () => setPageFeedback(null);
 
   const handleEdit = (beneficiary: Beneficiary) => {
     if (!beneficiary.id) return;
@@ -106,6 +315,33 @@ export const BeneficiaryPage = () => {
         <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-3 shadow-sm font-medium">
           <AlertCircle size={20} className="shrink-0" />
           {apiError}
+        </div>
+      )}
+
+      {pageFeedback && (
+        <div
+          className={`p-4 rounded-xl border shadow-sm flex items-start gap-3 ${
+            pageFeedback.type === "success"
+              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+              : "bg-red-50 border-red-200 text-red-700"
+          }`}
+        >
+          {pageFeedback.type === "success" ? (
+            <CheckCircle2 size={20} className="shrink-0 mt-0.5" />
+          ) : (
+            <AlertCircle size={20} className="shrink-0 mt-0.5" />
+          )}
+          <div className="flex-1">
+            <p className="font-semibold">{pageFeedback.title}</p>
+            <p className="text-sm mt-0.5">{pageFeedback.message}</p>
+          </div>
+          <button
+            type="button"
+            onClick={clearPageFeedback}
+            className="text-inherit opacity-70 hover:opacity-100 text-sm font-semibold"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
@@ -212,17 +448,47 @@ export const BeneficiaryPage = () => {
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Bank / Network Code</label>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Bank / Network</label>
+
+              {payoutInstitutions.length > 0 ? (
+                <select {...register("bankCode")}
+                  className={`w-full border p-3 rounded-xl text-sm bg-white outline-none focus:ring-2 transition-all ${errors.bankCode ? 'border-red-500 focus:ring-red-200' : 'border-slate-200 focus:ring-indigo-500'}`}>
+                  <option value="">Select institution…</option>
+                  {payoutInstitutions.map((inst) => (
+                    <option key={`${inst.id}-${inst.code}`} value={inst.code}>
+                      {inst.name} ({inst.code})
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <>
               <input {...register("bankCode")} list="payout-bank-codes"
-                placeholder="MPESA / AIRTEL / bank code…"
+                placeholder={institutionsLoading ? 'Loading banks…' : 'e.g. MPS / ATL / 058'}
                 className={`w-full border p-3 rounded-xl text-sm uppercase outline-none focus:ring-2 transition-all ${errors.bankCode ? 'border-red-500 focus:ring-red-200' : 'border-slate-200 focus:ring-indigo-500'}`} />
+                </>
+              )}
               <datalist id="payout-bank-codes">
-                <option value="MPESA">M-Pesa (mobile money)</option>
-                <option value="AIRTEL">Airtel Money</option>
-                <option value="EQUITY_BANK">Equity Bank</option>
+                {payoutInstitutions.length > 0 ? payoutInstitutions.map((inst) => (
+                  <option key={`${inst.id}-${inst.code}`} value={inst.code}>
+                    {inst.name} ({inst.code})
+                  </option>
+                )) : (
+                  <>
+                    <option value="MPS">M-Pesa Kenya</option>
+                    <option value="ATL">Airtel Kenya</option>
+                  </>
+                )}
               </datalist>
+
+              {institutionsError && (
+                <p className="text-[9px] text-amber-600 mt-1">{institutionsError}</p>
+              )}
               {errors.bankCode && <p className="text-red-500 text-xs mt-1">{errors.bankCode.message}</p>}
-              <p className="text-[9px] text-slate-400 mt-1">Mobile money network or Paystack bank code — required for payouts.</p>
+              {!institutionsError && payoutInstitutions.length === 0 && !institutionsLoading && (
+                <p className="text-[9px] text-slate-400 mt-1">
+                  Live list unavailable — enter the Flutterwave code exactly (MPS = M-Pesa KE).
+                </p>
+              )}
             </div>
 
             <div>
@@ -326,11 +592,15 @@ export const BeneficiaryPage = () => {
                     >
                       <Edit2 size={13}/>
                     </button>
-                    <button 
+                      <button 
                       onClick={async () => {
                         if (window.confirm("Are you sure you want to delete this beneficiary?")) {
-                          await remove(b.id!);
-                          refetch?.();
+                          setPageFeedback(null);
+                          await requestBeneficiaryChallenge(
+                            "BENEFICIARY_DELETE",
+                            buildBeneficiaryDeleteContext(b.id!),
+                            { kind: "delete", beneficiaryId: b.id! }
+                          );
                         }
                       }} 
                       className="p-1.5 text-slate-600 rounded-md hover:text-red-600 hover:bg-red-50 transition-colors"
@@ -345,6 +615,23 @@ export const BeneficiaryPage = () => {
           )}
         </div>
       </div>
+
+      <StepUpCodeModal
+        open={stepUpModalOpen}
+        title="Confirm beneficiary change"
+        description="Enter the verification code to complete this beneficiary action."
+        challenge={stepUpChallenge}
+        code={stepUpCode}
+        error={stepUpError}
+        isRequesting={stepUpRequesting}
+        isVerifying={stepUpVerifying}
+        submitLabel="Confirm"
+        resendLabel="Resend Code"
+        onCodeChange={setStepUpCode}
+        onSubmit={submitStepUpCode}
+        onCancel={closeStepUpModal}
+        onRequestNewCode={requestNewStepUpCode}
+      />
     </div>
   );
 };

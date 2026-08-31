@@ -4,7 +4,7 @@ import { Bell, Check, Loader2 } from "lucide-react";
 
 const NotificationBell: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { notifications, unreadCount, loading, markAsRead } = useNotifications();
+  const { notifications, unreadCount, loading, error, markAsRead } = useNotifications();
 
   return (
     <div className="relative inline-block text-left">
@@ -41,9 +41,17 @@ const NotificationBell: React.FC = () => {
                   <Loader2 className="h-5 w-5 animate-spin" />
                 </div>
               ) : (!notifications || notifications.length === 0) ? (
-                <div className="p-6 text-center text-sm text-slate-400">
-                  No notifications yet.
-                </div>
+                // Distinguish "nothing yet" from "fetch failed" — a silent
+                // failure here looks identical to an empty inbox otherwise.
+                error ? (
+                  <div className="p-6 text-center text-xs text-red-500">
+                    Couldn't load notifications. {error}
+                  </div>
+                ) : (
+                  <div className="p-6 text-center text-sm text-slate-400">
+                    No notifications yet.
+                  </div>
+                )
               ) : (
                 notifications.map((notification) => {
                   const isUnread = notification.status === 'UNREAD';

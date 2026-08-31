@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { PaginatedAdminUsers, WalletStatus } from "../validation/adminSchema";
-import { fetchAdminUsersApi, updateUserStatusApi } from "../api/adminApi";
+import { fetchAdminUsersApi, updateUserWalletStatusApi } from "../api/adminApi";
 import { ZodError } from "zod";
 
 export const useAdminUsers = () => {
@@ -27,10 +27,10 @@ export const useAdminUsers = () => {
     loadUsers();
   }, [loadUsers]);
 
-  // Mutation to freeze/suspend a user's wallet
-  const changeUserStatus = async (userId: string, newStatus: WalletStatus, reason: string) => {
+  // Mutation to freeze/suspend a user's retail wallet
+  const changeWalletStatus = async (userId: string, newStatus: WalletStatus, reason: string) => {
     try {
-      await updateUserStatusApi(userId, newStatus, reason);
+      await updateUserWalletStatusApi(userId, newStatus, reason);
       await loadUsers(); // Refresh list to reflect new status
       return { success: true };
     } catch (err: any) {
@@ -47,7 +47,7 @@ export const useAdminUsers = () => {
     },
     nextPage: () => usersData && currentPage < usersData.totalPages - 1 && setCurrentPage(p => p + 1),
     prevPage: () => currentPage > 0 && setCurrentPage(p => p - 1),
-    changeUserStatus,
+    changeWalletStatus,
     loading,
     error,
     refresh: loadUsers

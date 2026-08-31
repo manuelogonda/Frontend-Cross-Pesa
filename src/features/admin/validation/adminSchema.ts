@@ -43,7 +43,14 @@ export const EntryClassSchema = z.enum([
 // ==========================================
 // 2. USER MANAGEMENT & KYC SCHEMAS
 // ==========================================
-export const UserStatusSchema = z.enum(["ACTIVE", "INACTIVE", "SUSPENDED", "PENDING"]);
+export const UserStatusSchema = z.enum(["ACTIVE", "SUSPENDED", "LOCKED"]);
+export const StepUpActionSchema = z.enum([
+  "TRANSACTION_SEND",
+  "BENEFICIARY_CREATE",
+  "BENEFICIARY_UPDATE",
+  "BENEFICIARY_DELETE",
+  "ADMIN_TREASURY_REBALANCE",
+]);
 export const AdminUserSchema = z.object({
   id: z.string().uuid(),
   firstName: z.string(),
@@ -67,6 +74,27 @@ export const KycReviewRequestSchema = z.object({
   rejectionReason: z.string().optional(),
 });
 
+export const StepUpChallengeRequestSchema = z.object({
+  action: StepUpActionSchema,
+  context: z.string().min(1),
+});
+
+export const StepUpChallengeResponseSchema = z.object({
+  challengeId: z.string().uuid(),
+  expiresAt: z.string(),
+  delivery: z.string(),
+});
+
+export const StepUpVerifyRequestSchema = z.object({
+  challengeId: z.string().uuid(),
+  code: z.string().min(1),
+});
+
+export const StepUpVerifyResponseSchema = z.object({
+  stepUpToken: z.string().min(1),
+  expiresAt: z.string(),
+});
+
 // ==========================================
 // 3. WALLETS & TREASURY SCHEMAS
 // ==========================================
@@ -74,6 +102,7 @@ export const KycReviewRequestSchema = z.object({
 export const WalletResponseSchema = z.object({
   id: z.string().uuid(),
   currency: CurrencySchema,
+  walletType: WalletTypeSchema,
   balance: z.number(),
   lockedBalance: z.number(),
   availableBalance: z.number(),
@@ -86,6 +115,10 @@ export const TreasuryRebalanceSchema = z.object({
   targetCurrency: CurrencySchema,
   depositAmount: z.number().positive("Amount must be greater than zero"),
   notes: z.string().min(5, "Rebalance reason/notes are required for audit trail"),
+});
+
+export const AdminMessageResponseSchema = z.object({
+  message: z.string(),
 });
 
 // ==========================================
@@ -140,7 +173,8 @@ export const DashboardMetricsSchema = z.object({
   pendingTransactions: z.number(),
   flaggedTransactions: z.number(),
   totalRevenueToday: z.number(),
-  totalUsers: z.number().optional(),
+  netMarkupRevenueToday: z.number(),
+  completedTransactionsToday: z.number(),
 });
 
 
@@ -177,6 +211,7 @@ export const PaginatedWalletsSchema = createPaginatedSchema(WalletResponseSchema
 export type Currency = z.infer<typeof CurrencySchema>;
 export type WalletType = z.infer<typeof WalletTypeSchema>;
 export type WalletStatus = z.infer<typeof WalletStatusSchema>;
+export type StepUpAction = z.infer<typeof StepUpActionSchema>;
 export type TransactionStatus = z.infer<typeof TransactionStatusSchema>;
 export type KycStatus = z.infer<typeof KycStatusSchema>;
 export type EntryClass = z.infer<typeof EntryClassSchema>;
@@ -185,6 +220,11 @@ export type AdminUser = z.infer<typeof AdminUserSchema>;
 export type KycReviewRequest = z.infer<typeof KycReviewRequestSchema>;
 export type WalletResponse = z.infer<typeof WalletResponseSchema>;
 export type TreasuryRebalance = z.infer<typeof TreasuryRebalanceSchema>;
+export type StepUpChallengeRequest = z.infer<typeof StepUpChallengeRequestSchema>;
+export type StepUpChallengeResponse = z.infer<typeof StepUpChallengeResponseSchema>;
+export type StepUpVerifyRequest = z.infer<typeof StepUpVerifyRequestSchema>;
+export type StepUpVerifyResponse = z.infer<typeof StepUpVerifyResponseSchema>;
+export type AdminMessageResponse = z.infer<typeof AdminMessageResponseSchema>;
 export type AdminTransaction = z.infer<typeof AdminTransactionSchema>;
 export type LedgerEntry = z.infer<typeof LedgerEntrySchema>;
 

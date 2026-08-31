@@ -10,7 +10,7 @@ export const BENEFICIARY_ID = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
 export const TX_ID = 'b4c5d6e7-f8a9-4b0c-8d1e-2f3a4b5c6d7e';
 
 // ── Fixture builders ───────────────────────────────────────────────────────
-export const makeWallet = (overrides: Record<string, unknown> = {}) => ({
+export const makeWallet = (overrides: Partial<Wallet> = {}): Wallet => ({
   id: WALLET_ID,
   currency: 'KES',
   balance: 26000,

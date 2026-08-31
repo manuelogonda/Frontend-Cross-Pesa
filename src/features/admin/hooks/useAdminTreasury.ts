@@ -31,9 +31,9 @@ export const useAdminTreasury = () => {
   }, [loadTreasuryData]);
 
   // Mutation for Rebalancing
-  const handleRebalance = async (payload: TreasuryRebalance) => {
+  const handleRebalance = async (payload: TreasuryRebalance, stepUpToken?: string) => {
     try {
-      await executeTreasuryRebalanceApi(payload);
+      await executeTreasuryRebalanceApi(payload, stepUpToken);
       await loadTreasuryData(); // Refresh pools after rebalancing
       return { success: true };
     } catch (err: any) {

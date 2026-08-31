@@ -1,14 +1,20 @@
-import { useWallets } from "../../wallet/hooks/useWallets";
+import { useWallets, WALLET_QUERY_KEY } from "../../wallet/hooks/useWallets";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useTransfer } from "../hooks/useTransfer";
+import { useTransfer, LEDGER_STATEMENT_QUERY_KEY, TRANSACTION_HISTORY_QUERY_KEY } from "../hooks/useTransfer";
 import { RateDisplayCard } from "../../rates/components/RateDisplayCard";
 import { AlertCircle, ArrowRight, CheckCircle2, Loader2, ShieldCheck, TrendingUp, User, WalletIcon } from "lucide-react";
 import { TransferSchema, type TransferFormInput } from "../validation/transferSchema";
 import { Currencies } from "../../wallet/validation/walletSchema";
 import { useBeneficiaries } from "../../beneficiaries/hooks/useBeneficiaries";
 import { getTransactionStatusApi } from "../api/transactionApi";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { NOTIFICATIONS_QUERY_KEY } from "../../notifications/hooks/useNotifications";
+import type { TransferFormData } from "../validation/transferSchema";
+import { StepUpCodeModal } from "../../../components/ui/StepUpCodeModal";
+import { buildStepUpContext, requestStepUpChallengeApi, verifyStepUpChallengeApi } from "../../../lib/stepUp";
+import type { StepUpAction, StepUpChallengeResponse } from "../../admin/validation/adminSchema";
 
 
 export const TransferForm = () => {
@@ -37,7 +43,27 @@ export const TransferForm = () => {
     }
   });
 
-  const { execute, isSubmitting, error, successData, setSuccessData, reset: resetTransferState } = useTransfer();
+  const { execute, isSubmitting, error, successData, setSuccessData, reset: resetTransferState, getIdempotencyKey } = useTransfer();
+  const queryClient = useQueryClient();
+  const [pendingTransfer, setPendingTransfer] = useState<TransferFormData | null>(null);
+  const [stepUpModalOpen, setStepUpModalOpen] = useState(false);
+  const [stepUpChallenge, setStepUpChallenge] = useState<StepUpChallengeResponse | null>(null);
+  const [stepUpCode, setStepUpCode] = useState("");
+  const [stepUpRequesting, setStepUpRequesting] = useState(false);
+  const [stepUpVerifying, setStepUpVerifying] = useState(false);
+  const [stepUpError, setStepUpError] = useState<string | null>(null);
+
+  const TRANSFER_STEP_UP_ACTION: StepUpAction = "TRANSACTION_SEND";
+
+  // Settlement just landed (payout sent or funds refunded) — balances moved and
+  // the backend wrote the completion notification. Pull fresh server state now
+  // instead of waiting for the next 30s notification poll.
+  const invalidateSettledQueries = async () => {
+    await queryClient.invalidateQueries({ queryKey: WALLET_QUERY_KEY });
+    await queryClient.invalidateQueries({ queryKey: LEDGER_STATEMENT_QUERY_KEY });
+    await queryClient.invalidateQueries({ queryKey: TRANSACTION_HISTORY_QUERY_KEY });
+    await queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
+  };
 
   // Watch form fields for live UI updates
   const watchAmount = watch("amount") || 0;
@@ -52,6 +78,75 @@ export const TransferForm = () => {
     }
   }, [wallet, setValue]);
 
+  const buildTransferContext = (payload: TransferFormData) =>
+    buildStepUpContext([
+      ["sourceWalletId", payload.sourceWalletId],
+      ["beneficiaryId", payload.beneficiaryId],
+      ["sourceCurrency", payload.sourceCurrency],
+      ["destinationCurrency", payload.destinationCurrency],
+      ["amount", payload.amount],
+      ["idempotencyKey", getIdempotencyKey()],
+    ]);
+
+  const requestTransferChallenge = async (payload: TransferFormData) => {
+    setStepUpRequesting(true);
+    setStepUpError(null);
+    setPendingTransfer(payload);
+    try {
+      const challenge = await requestStepUpChallengeApi({
+        action: TRANSFER_STEP_UP_ACTION,
+        context: buildTransferContext(payload),
+      });
+      setStepUpChallenge(challenge);
+      setStepUpCode("");
+      setStepUpModalOpen(true);
+    } catch (err: any) {
+      setStepUpChallenge(null);
+      setStepUpModalOpen(true);
+      setStepUpError(err.response?.data?.message || "Failed to request step-up challenge");
+    } finally {
+      setStepUpRequesting(false);
+    }
+  };
+
+  const closeStepUpModal = () => {
+    setStepUpModalOpen(false);
+    setStepUpChallenge(null);
+    setStepUpCode("");
+    setStepUpRequesting(false);
+    setStepUpVerifying(false);
+    setStepUpError(null);
+    setPendingTransfer(null);
+  };
+
+  const requestNewStepUpCode = async () => {
+    if (!pendingTransfer) return;
+    await requestTransferChallenge(pendingTransfer);
+  };
+
+  const submitStepUpCode = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!stepUpChallenge || !pendingTransfer) return;
+
+    setStepUpVerifying(true);
+    setStepUpError(null);
+
+    try {
+      const verification = await verifyStepUpChallengeApi({
+        challengeId: stepUpChallenge.challengeId,
+        code: stepUpCode.trim(),
+      });
+
+      const transferPayload = pendingTransfer;
+      closeStepUpModal();
+      await execute(transferPayload, verification.stepUpToken);
+    } catch (err: any) {
+      setStepUpError(err.response?.data?.message || "Step-up verification failed");
+    } finally {
+      setStepUpVerifying(false);
+    }
+  };
+
   // Update target currency when a beneficiary is chosen
   useEffect(() => {
     const selectedBen = beneficiaries.find(b => b.id === watchBeneficiaryId);
@@ -64,12 +159,20 @@ export const TransferForm = () => {
   // via payout webhooks; poll until terminal state and update the receipt.
   useEffect(() => {
     if (!successData) return;
-    const isTerminal = ['COMPLETED', 'FAILED', 'FLAGGED'].includes(successData.status);
-    if (isTerminal) return;
+    const wasTerminal = ['COMPLETED', 'FAILED', 'FLAGGED'].includes(successData.status);
+    if (wasTerminal) return;
 
     const intervalId = setInterval(async () => {
       try {
-        setSuccessData(await getTransactionStatusApi(successData.id));
+        const next = await getTransactionStatusApi(successData.id);
+        setSuccessData(next);
+
+        // First observation of a terminal state: the settlement worker has
+        // finished (payout sent, or funds refunded on FAILED) and the backend
+        // has written the completion notification — so sync everything now.
+        if (['COMPLETED', 'FAILED', 'FLAGGED'].includes(next.status)) {
+          await invalidateSettledQueries();
+        }
       } catch {
         // Transient poll failure — non-fatal, next tick retries
       }
@@ -83,7 +186,7 @@ export const TransferForm = () => {
   // 3. Submit Handler
   const onSubmit = async (data: TransferFormInput) => {
     try {
-      await execute(data);
+      await requestTransferChallenge(data as TransferFormData);
     } catch {
       // Error handled by hook and exposed via `error` state
     }
@@ -314,6 +417,23 @@ export const TransferForm = () => {
           </div>
         </div>
       )}
+
+      <StepUpCodeModal
+        open={stepUpModalOpen}
+        title="Confirm transfer"
+        description="Enter the verification code to authorize this transfer."
+        challenge={stepUpChallenge}
+        code={stepUpCode}
+        error={stepUpError}
+        isRequesting={stepUpRequesting}
+        isVerifying={stepUpVerifying}
+        submitLabel="Authorize Transfer"
+        resendLabel="Resend Code"
+        onCodeChange={setStepUpCode}
+        onSubmit={submitStepUpCode}
+        onCancel={closeStepUpModal}
+        onRequestNewCode={requestNewStepUpCode}
+      />
     </div>
   );
 };

@@ -32,30 +32,30 @@ export const useBeneficiaries = () => {
     }
   }, []);
 
-  const add = async (payload: BeneficiaryFormData) => {
+  const add = async (payload: BeneficiaryFormData, stepUpToken?: string) => {
     setError(null);
     try {
-      await addBeneficiaryApi(payload);
+      await addBeneficiaryApi(payload, stepUpToken);
       await load(); // Refresh the list automatically
     } catch (err: any) {
       handleError(err);
     }
   };
 
-  const update = async (id: string, payload: BeneficiaryFormData) => {
+  const update = async (id: string, payload: BeneficiaryFormData, stepUpToken?: string) => {
     setError(null);
     try {
-      await updateBeneficiaryApi(id, payload);
+      await updateBeneficiaryApi(id, payload, stepUpToken);
       await load();
     } catch (err: any) {
       handleError(err);
     }
   };
 
-  const remove = async (id: string) => {
+  const remove = async (id: string, stepUpToken?: string) => {
     setError(null);
     try {
-      await deleteBeneficiaryApi(id);
+      await deleteBeneficiaryApi(id, stepUpToken);
       await load();
     } catch (err: any) {
       handleError(err);

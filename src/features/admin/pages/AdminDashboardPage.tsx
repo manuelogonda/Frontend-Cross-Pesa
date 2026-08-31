@@ -1,4 +1,4 @@
-import { Activity, ArrowDownLeft, ArrowUpRight, Building2, ChevronLeft, ChevronRight, Clock, DollarSign, RefreshCw, ShieldAlert } from "lucide-react";
+import { Activity, ArrowDownLeft, ArrowUpRight, BadgeCheck, Building2, ChevronLeft, ChevronRight, Clock, DollarSign, RefreshCw, ShieldAlert, TrendingUp } from "lucide-react";
 import { useAdminDashboard } from "../hooks/useAdminDashboard";
 import type { TransactionStatus } from "../validation/adminSchema";
 
@@ -59,7 +59,7 @@ export const AdminDashboardPage = () => {
       </div>
 
       {/* METRICS CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
           <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
             <Activity size={24} />
@@ -99,6 +99,28 @@ export const AdminDashboardPage = () => {
             <h3 className="text-2xl font-bold text-slate-800">
               ${metrics?.totalRevenueToday?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
             </h3>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="h-12 w-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+            <TrendingUp size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 font-medium">Net Markup Revenue</p>
+            <h3 className="text-2xl font-bold text-slate-800">
+              ${metrics?.netMarkupRevenueToday?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+            </h3>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+          <div className="h-12 w-12 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 shrink-0">
+            <BadgeCheck size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 font-medium">Completed Today</p>
+            <h3 className="text-2xl font-bold text-slate-800">{metrics?.completedTransactionsToday || 0}</h3>
           </div>
         </div>
       </div>
