@@ -1,5 +1,5 @@
 import { useWallets } from "../hooks/useWallets";
-import { AlertCircle, ArrowUpRight, ChevronLeft, ChevronRight, PlusCircle, Wallet } from "lucide-react";
+import { AlertCircle, ArrowUpRight, ChevronLeft, ChevronRight, RefreshCcw, Wallet } from "lucide-react";
 import { WalletCard } from "../components/WalletCard";
 import { useNavigate } from "react-router-dom";
 import { useWalletStatement } from "../hooks/useWalletStatement";
@@ -10,7 +10,7 @@ export const WalletDashboardPage = () => {
   
   // 1. Destructure wallet data (cached by TanStack Query — fresh on mount via
   //    background refetch of stale data; NO forced second fetch)
-  const { wallet, isLoading: isLoadingWallet, error: walletError } = useWallets();
+  const { wallet, isLoading: isLoadingWallet, error: walletError, refetch } = useWallets();
   
   // 2. Destructure ledger statement data, pagination handlers, and refetch handler
   const { 
@@ -52,21 +52,35 @@ const formattedEntries = entries.map((entry) => ({
   badgeColor: entry.debit > 0 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700',
 }));
 
-  // 4. EMPTY STATE: If the user hasn't created a wallet, prompt them to do so
+  // 4. EMPTY STATE: Legacy fallback for accounts that do not yet have a wallet
   if (!wallet) {
     return (
-      <div className="max-w-3xl mx-auto p-8 mt-12 text-center bg-white rounded-2xl shadow-sm border border-slate-200 animate-in fade-in zoom-in duration-300">
-         <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
-           <PlusCircle size={40} />
+      <div className="max-w-3xl mx-auto p-8 mt-12 text-center bg-white rounded-2xl shadow-sm border border-amber-200 animate-in fade-in zoom-in duration-300">
+         <div className="w-20 h-20 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-6">
+           <AlertCircle size={40} />
          </div>
-         <h2 className="text-3xl font-bold text-slate-900 mb-3">Welcome to AfriPay</h2>
-         <p className="text-slate-500 mb-8 text-lg">You need to configure your primary currency wallet before you can manage funds.</p>
-         <button 
-           onClick={() => navigate('/create-wallet')}
-           className="bg-indigo-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-md"
-         >
-           Create Your Wallet
-         </button>
+         <h2 className="text-3xl font-bold text-slate-900 mb-3">Wallet not found</h2>
+         <p className="text-slate-500 mb-2 text-lg">
+           New accounts should receive a wallet automatically during registration.
+         </p>
+         <p className="text-slate-500 mb-8 text-sm">
+           If this is an older account, refresh first. If the wallet is still missing, contact support.
+         </p>
+         <div className="flex flex-col sm:flex-row justify-center gap-3">
+           <button
+             onClick={() => refetch()}
+             className="bg-indigo-600 text-white px-8 py-4 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-md inline-flex items-center justify-center gap-2"
+           >
+             <RefreshCcw size={18} />
+             Refresh
+           </button>
+           <button
+             onClick={() => navigate('/topup')}
+             className="bg-slate-900 text-white px-8 py-4 rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-md"
+           >
+             Go to Top-up
+           </button>
+         </div>
       </div>
     );
   }

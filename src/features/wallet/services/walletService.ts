@@ -34,14 +34,6 @@ export const getWallet = async (): Promise<Wallet> => {
   return WalletSchema.parse(data);
 };
 
-/**
- * Creates the user's primary retail wallet during onboarding.
- */
-export const createWallet = async (currency: string): Promise<Wallet> => {
-  const { data } = await apiClient.post('/wallets', { currency });
-  return WalletSchema.parse(data);
-};
-
 // ==========================================
 // 3. FLUTTERWAVE TOP-UP FLOW
 // ==========================================

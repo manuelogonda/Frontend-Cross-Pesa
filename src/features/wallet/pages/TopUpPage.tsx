@@ -46,12 +46,14 @@ export const TopUpPage = () => {
       <div className="max-w-md mx-auto mt-10 bg-white p-8 rounded-2xl shadow-sm border border-amber-200 text-center">
         <AlertCircle size={32} className="text-amber-500 mx-auto mb-4" />
         <h2 className="text-xl font-bold text-slate-900">No Wallet Found</h2>
-        <p className="text-slate-500 mt-2 mb-6">You need to create a wallet before you can add funds.</p>
+        <p className="text-slate-500 mt-2 mb-6">
+          New users should already have a wallet after registration. Refresh first, then contact support if it still does not appear.
+        </p>
         <button 
-          onClick={() => navigate('/create-wallet')}
+          onClick={() => navigate('/dashboard')}
           className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-colors"
         >
-          Create Wallet
+          Go to Dashboard
         </button>
       </div>
     );

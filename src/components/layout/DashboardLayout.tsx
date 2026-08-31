@@ -27,9 +27,6 @@ export const DashboardLayout = () => {
             <NavLink to="/topup" className={({ isActive }) => `flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${isActive ? 'bg-indigo-50 text-indigo-700 font-medium' : 'hover:bg-slate-100 text-slate-700'}`}>
                 <PlusCircle size={20}/> Top-up Wallet
             </NavLink>
-            <NavLink to="/create-wallet" className={({ isActive }) => `flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${isActive ? 'bg-indigo-50 text-indigo-700 font-medium' : 'hover:bg-slate-100 text-slate-700'}`}>
-                <Wallet  size={20}/> Create Wallet
-            </NavLink>
             <NavLink to="/transfer" className={({ isActive }) => `flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${isActive ? 'bg-indigo-50 text-indigo-700 font-medium' : 'hover:bg-slate-100 text-slate-700'}`}>
                 <Send size={20}/> Send Money
             </NavLink>
