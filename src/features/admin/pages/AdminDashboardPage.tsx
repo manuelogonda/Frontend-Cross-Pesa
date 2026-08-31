@@ -1,4 +1,5 @@
 import { Activity, ArrowDownLeft, ArrowUpRight, BadgeCheck, Building2, ChevronLeft, ChevronRight, Clock, DollarSign, RefreshCw, ShieldAlert, TrendingUp } from "lucide-react";
+import type { ComponentType } from "react";
 import { useAdminDashboard } from "../hooks/useAdminDashboard";
 import type { TransactionStatus } from "../validation/adminSchema";
 
@@ -15,6 +16,63 @@ export const AdminDashboardPage = () => {
     error,
     refresh
   } = useAdminDashboard();
+
+  type MetricCard = {
+    label: string;
+    value: string | number;
+    icon: ComponentType<{ size?: number }>;
+    iconClassName: string;
+    valueClassName: string;
+    labelClassName?: string;
+    cardClassName?: string;
+  };
+
+  const metricCards: MetricCard[] = [
+    {
+      label: "Transactions Today",
+      value: metrics?.totalTransactionsToday || 0,
+      icon: Activity,
+      iconClassName: "bg-indigo-100 text-indigo-600",
+      valueClassName: "text-slate-800",
+    },
+    {
+      label: "Pending Settlement",
+      value: metrics?.pendingTransactions || 0,
+      icon: Clock,
+      iconClassName: "bg-yellow-100 text-yellow-600",
+      valueClassName: "text-slate-800",
+    },
+    {
+      label: "Flagged Risk",
+      value: metrics?.flaggedTransactions || 0,
+      icon: ShieldAlert,
+      iconClassName: "bg-red-100 text-red-600",
+      valueClassName: "text-red-700",
+      labelClassName: "text-red-500",
+      cardClassName: "border-red-200",
+    },
+    {
+      label: "Platform Revenue",
+      value: `$${metrics?.totalRevenueToday?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}`,
+      icon: DollarSign,
+      iconClassName: "bg-green-100 text-green-600",
+      valueClassName: "text-slate-800",
+    },
+    {
+      label: "Net Markup Revenue",
+      value: `$${metrics?.netMarkupRevenueToday?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || "0.00"}`,
+      icon: TrendingUp,
+      iconClassName: "bg-emerald-100 text-emerald-600",
+      valueClassName: "text-slate-800",
+    },
+    {
+      label: "Completed Today",
+      value: metrics?.completedTransactionsToday || 0,
+      icon: BadgeCheck,
+      iconClassName: "bg-sky-100 text-sky-600",
+      valueClassName: "text-slate-800",
+    },
+  ];
 
   const getStatusBadge = (status: TransactionStatus) => {
     switch (status) {
@@ -59,70 +117,27 @@ export const AdminDashboardPage = () => {
       </div>
 
       {/* METRICS CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-6">
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
-            <Activity size={24} />
-          </div>
-          <div>
-            <p className="text-sm text-slate-500 font-medium">Transactions Today</p>
-            <h3 className="text-2xl font-bold text-slate-800">{metrics?.totalTransactionsToday || 0}</h3>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-4 xl:gap-6">
+        {metricCards.map((card) => {
+          const Icon = card.icon;
+          const cardClassName = card.cardClassName ?? "border-slate-200";
+          const labelClassName = card.labelClassName ?? "text-slate-500";
 
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="h-12 w-12 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 shrink-0">
-            <Clock size={24} />
-          </div>
-          <div>
-            <p className="text-sm text-slate-500 font-medium">Pending Settlement</p>
-            <h3 className="text-2xl font-bold text-slate-800">{metrics?.pendingTransactions || 0}</h3>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl border border-red-200 shadow-sm flex items-center gap-4">
-          <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0">
-            <ShieldAlert size={24} />
-          </div>
-          <div>
-            <p className="text-sm text-red-500 font-medium">Flagged Risk</p>
-            <h3 className="text-2xl font-bold text-red-700">{metrics?.flaggedTransactions || 0}</h3>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0">
-            <DollarSign size={24} />
-          </div>
-          <div>
-            <p className="text-sm text-slate-500 font-medium">Platform Revenue</p>
-            <h3 className="text-2xl font-bold text-slate-800">
-              ${metrics?.totalRevenueToday?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-            </h3>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="h-12 w-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-            <TrendingUp size={24} />
-          </div>
-          <div>
-            <p className="text-sm text-slate-500 font-medium">Net Markup Revenue</p>
-            <h3 className="text-2xl font-bold text-slate-800">
-              ${metrics?.netMarkupRevenueToday?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
-            </h3>
-          </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="h-12 w-12 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 shrink-0">
-            <BadgeCheck size={24} />
-          </div>
-          <div>
-            <p className="text-sm text-slate-500 font-medium">Completed Today</p>
-            <h3 className="text-2xl font-bold text-slate-800">{metrics?.completedTransactionsToday || 0}</h3>
-          </div>
-        </div>
+          return (
+            <div
+              key={card.label}
+              className={`bg-white p-5 xl:p-6 rounded-xl border shadow-sm flex items-center gap-4 min-h-[108px] ${cardClassName}`}
+            >
+              <div className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 ${card.iconClassName}`}>
+                <Icon size={24} />
+              </div>
+              <div className="min-w-0">
+                <p className={`text-sm font-medium ${labelClassName}`}>{card.label}</p>
+                <h3 className={`text-2xl font-bold break-words ${card.valueClassName}`}>{card.value}</h3>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* GLOBAL LEDGER DATA TABLE */}
