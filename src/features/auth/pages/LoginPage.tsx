@@ -5,6 +5,7 @@ import { Loader2, Mail, Lock } from 'lucide-react';
 import { loginSchema, type LoginFormData } from '../validation/authSchema';
 import { useLogin } from '../hooks/useAuthMutation';
 import { GoogleLoginButton } from '../../../components/ui/GoogleLoginButton';
+import { PasswordInput } from '../../../components/ui/PasswordInput';
 
 export const LoginPage = () => {
   const { mutate: login, isPending, error } = useLogin();
@@ -16,12 +17,6 @@ export const LoginPage = () => {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
-
-  {error && (
-  <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg mb-4">
-    {(error as any)?.response?.data?.error || "Invalid email or password."}
-  </div>
-  )}
 
   const onSubmit = (data: LoginFormData) => {
     login(data);
@@ -69,19 +64,13 @@ export const LoginPage = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700">Password</label>
-              <div className="relative mt-1">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  {...register('password')}
-                  type="password"
-                  className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-600 focus:border-indigo-600 sm:text-sm ${
-                    errors.password ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  placeholder="••••••••"
-                />
-              </div>
+              <PasswordInput
+                {...register('password')}
+                leadingIcon={<Lock className="h-5 w-5 text-gray-400" />}
+                className={errors.password ? 'border-red-300' : 'border-gray-300'}
+                placeholder="••••••••"
+                autoComplete="current-password"
+              />
               {errors.password && (
                 <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
               )}

@@ -8,6 +8,7 @@ import { useRegister } from '../hooks/useAuthMutation';
 import { ApiFieldError } from '../services/authService';
 import { Currencies } from '../../wallet/validation/walletSchema';
 import { deriveFromPhone } from '../../../lib/phoneCountry';
+import { PasswordInput } from '../../../components/ui/PasswordInput';
 
 // Fields the backend may reject with per-field validation errors
 const SERVER_FIELD_NAMES = ['firstName', 'lastName', 'email', 'phoneNumber', 'password', 'currency'];
@@ -147,18 +148,13 @@ export const RegisterPage = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700">Password</label>
-              <div className="relative mt-1">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  {...register('password')}
-                  type="password"
-                  autoComplete="new-password"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-600 focus:border-indigo-600 sm:text-sm"
-                  placeholder="••••••••••••"
-                />
-              </div>
+              <PasswordInput
+                {...register('password')}
+                leadingIcon={<Lock className="h-5 w-5 text-gray-400" />}
+                autoComplete="new-password"
+                className="border-gray-300"
+                placeholder="••••••••••••"
+              />
               <p className="mt-1 text-xs text-gray-500">
                 10–128 characters with at least one uppercase letter, one lowercase letter, one digit, and one special character.
               </p>

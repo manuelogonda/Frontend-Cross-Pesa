@@ -1,5 +1,6 @@
 import { KeyRound, X } from "lucide-react";
 import type { FormEvent } from "react";
+import { PasswordInput } from "./PasswordInput";
 
 type PasswordConfirmationModalProps = {
   open: boolean;
@@ -51,13 +52,12 @@ export const PasswordConfirmationModal = ({
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
               Password
             </label>
-            <input
+            <PasswordInput
               value={password}
               onChange={(event) => onPasswordChange(event.target.value)}
-              type="password"
               autoComplete="current-password"
               placeholder="Your password"
-              className="w-full border border-slate-300 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500"
+              className="border-slate-300 rounded-2xl px-4 py-3 focus:ring-2 focus:ring-indigo-500"
             />
           </div>
 
