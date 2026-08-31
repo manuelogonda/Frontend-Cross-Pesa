@@ -10,6 +10,7 @@ import { usePayoutInstitutions } from "../hooks/usePayoutsInstitutions";
 import { useEffect, useState, type FormEvent } from "react";
 import { PasswordConfirmationModal } from "../../../components/ui/PasswordConfirmationModal";
 import { buildStepUpContext } from "../../../lib/stepUp";
+import { getBeneficiaryActionErrorMessage } from "../../../lib/apiErrors";
 import { authService } from "../../auth/services/authService";
 import { toast } from "../../../store/toastStore";
 
@@ -190,7 +191,14 @@ export const BeneficiaryPage = () => {
 
       closePasswordModal();
     } catch (err: any) {
-      const message = err.response?.data?.message || err.message || "Password confirmation failed";
+      const message = getBeneficiaryActionErrorMessage(
+        err,
+        pendingAction.kind === "create"
+          ? "create"
+          : pendingAction.kind === "update"
+            ? "update"
+            : "delete"
+      );
       setPasswordError(message);
       setPageFeedback({ type: "error", title: "Beneficiary action failed", message });
       toast.error(message);

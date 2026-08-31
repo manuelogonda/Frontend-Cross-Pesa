@@ -40,3 +40,36 @@ export const getApiErrorMessage = (
 ): string =>
   (err as { response?: { data?: { message?: string } } } | undefined)?.response?.data?.message ||
   fallback;
+
+export type BeneficiaryAction = "load" | "create" | "update" | "delete";
+
+export const getBeneficiaryActionErrorMessage = (
+  err: unknown,
+  action: BeneficiaryAction
+): string => {
+  const backendMessage = getApiErrorMessage(err, "");
+  if (backendMessage) return backendMessage;
+
+  const status = getApiStatus(err);
+
+  switch (action) {
+    case "delete":
+      if (status === ApiStatus.CONFLICT) {
+        return "This beneficiary can’t be deleted because it already has transaction history.";
+      }
+      return "Could not delete this beneficiary. Please try again.";
+    case "update":
+      if (status === ApiStatus.CONFLICT) {
+        return "This beneficiary can’t be updated because the new details conflict with an existing saved route.";
+      }
+      return "Could not update this beneficiary. Please try again.";
+    case "create":
+      if (status === ApiStatus.CONFLICT) {
+        return "This beneficiary already exists with the same account details.";
+      }
+      return "Could not save this beneficiary. Please try again.";
+    case "load":
+    default:
+      return "An unexpected error occurred. Please try again.";
+  }
+};

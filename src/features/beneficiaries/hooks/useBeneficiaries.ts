@@ -3,6 +3,7 @@ import type { BeneficiaryFormData } from "../validation/beneficiarySchema";
 import { addBeneficiaryApi, deleteBeneficiaryApi, fetchBeneficiariesApi, updateBeneficiaryApi } from "../api/beneficiaryApi";
 import { ZodError } from "zod";
 import type { Beneficiary } from "../validation/beneficiarySchema";
+import { getBeneficiaryActionErrorMessage, type BeneficiaryAction } from "../../../lib/apiErrors";
 
 export const useBeneficiaries = () => {
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
@@ -10,11 +11,11 @@ export const useBeneficiaries = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Helper to extract clean error messages from the backend
-  const handleError = (err: any) => {
+  const handleError = (err: any, action: BeneficiaryAction = "load") => {
     if (err instanceof ZodError) {
       setError("Data format error. Please check your inputs.");
     } else {
-      setError(err.response?.data?.message || err.message || "An unexpected error occurred.");
+      setError(getBeneficiaryActionErrorMessage(err, action));
     }
     throw err; // Re-throw so the UI form knows to stop its loading state
   };
@@ -26,7 +27,7 @@ export const useBeneficiaries = () => {
       const data = await fetchBeneficiariesApi();
       setBeneficiaries(data);
     } catch (err: any) {
-      handleError(err);
+      handleError(err, "load");
     } finally {
       setIsLoading(false);
     }
@@ -38,7 +39,7 @@ export const useBeneficiaries = () => {
       await addBeneficiaryApi(payload, stepUpToken);
       await load(); // Refresh the list automatically
     } catch (err: any) {
-      handleError(err);
+      handleError(err, "create");
     }
   };
 
@@ -48,7 +49,7 @@ export const useBeneficiaries = () => {
       await updateBeneficiaryApi(id, payload, stepUpToken);
       await load();
     } catch (err: any) {
-      handleError(err);
+      handleError(err, "update");
     }
   };
 
@@ -58,7 +59,7 @@ export const useBeneficiaries = () => {
       await deleteBeneficiaryApi(id, stepUpToken);
       await load();
     } catch (err: any) {
-      handleError(err);
+      handleError(err, "delete");
     }
   };
 
