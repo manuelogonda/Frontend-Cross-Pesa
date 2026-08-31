@@ -1,5 +1,12 @@
 import { apiClient } from "../../../lib/axios";
-import type { AuthResponse, LoginFormData, RegisterFormData } from "../validation/authSchema";
+import {
+  passwordConfirmationSchema,
+  type AuthResponse,
+  type LoginFormData,
+  type PasswordConfirmationFormData,
+  type RegisterFormData,
+} from "../validation/authSchema";
+import { StepUpVerifyResponseSchema, type StepUpVerifyResponse } from "../../admin/validation/adminSchema";
 
 /**
  * Thrown when the backend rejects a payload with per-field validation errors.
@@ -54,5 +61,11 @@ export const authService = {
     } finally {
       // Hook point for analytics/telemetry regardless of success/failure
     }
+  },
+
+  confirmPassword: async (payload: PasswordConfirmationFormData): Promise<StepUpVerifyResponse> => {
+    const parsedPayload = passwordConfirmationSchema.parse(payload);
+    const { data } = await apiClient.post('/auth/password-confirmation', parsedPayload);
+    return StepUpVerifyResponseSchema.parse(data);
   }
 };

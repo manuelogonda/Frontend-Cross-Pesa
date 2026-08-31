@@ -7,10 +7,10 @@ import type { Beneficiary } from "../validation/beneficiarySchema";
 import { Currencies } from "../../wallet/validation/walletSchema";
 import { deriveFromPhone } from "../../../lib/phoneCountry";
 import { usePayoutInstitutions } from "../hooks/usePayoutsInstitutions";
-import { useEffect, useState } from "react";
-import { StepUpCodeModal } from "../../../components/ui/StepUpCodeModal";
-import { buildStepUpContext, requestStepUpChallengeApi, verifyStepUpChallengeApi } from "../../../lib/stepUp";
-import type { StepUpAction, StepUpChallengeResponse } from "../../admin/validation/adminSchema";
+import { useEffect, useState, type FormEvent } from "react";
+import { PasswordConfirmationModal } from "../../../components/ui/PasswordConfirmationModal";
+import { buildStepUpContext } from "../../../lib/stepUp";
+import { authService } from "../../auth/services/authService";
 import { toast } from "../../../store/toastStore";
 
 
@@ -42,12 +42,10 @@ export const BeneficiaryPage = () => {
     | { kind: "delete"; beneficiaryId: string }
     | null
   >(null);
-  const [stepUpModalOpen, setStepUpModalOpen] = useState(false);
-  const [stepUpChallenge, setStepUpChallenge] = useState<StepUpChallengeResponse | null>(null);
-  const [stepUpCode, setStepUpCode] = useState("");
-  const [stepUpRequesting, setStepUpRequesting] = useState(false);
-  const [stepUpVerifying, setStepUpVerifying] = useState(false);
-  const [stepUpError, setStepUpError] = useState<string | null>(null);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [passwordValue, setPasswordValue] = useState("");
+  const [passwordSubmitting, setPasswordSubmitting] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [pageFeedback, setPageFeedback] = useState<{
     type: "success" | "error";
     title: string;
@@ -108,40 +106,12 @@ export const BeneficiaryPage = () => {
   const buildBeneficiaryDeleteContext = (beneficiaryId: string) =>
     buildStepUpContext([["beneficiaryId", beneficiaryId]]);
 
-  const requestBeneficiaryChallenge = async (
-    action: StepUpAction,
-    context: string,
-    nextAction: NonNullable<typeof pendingAction>
-  ) => {
-    setStepUpRequesting(true);
-    setStepUpError(null);
+  const openPasswordModal = (nextAction: NonNullable<typeof pendingAction>) => {
     setPendingAction(nextAction);
-    try {
-      const challenge = await requestStepUpChallengeApi({ action, context });
-      setStepUpChallenge(challenge);
-      setStepUpCode("");
-      setStepUpModalOpen(true);
-      setPageFeedback(null);
-    } catch (err: any) {
-      setStepUpChallenge(null);
-      setStepUpModalOpen(true);
-      const message = err.response?.data?.message || "Failed to request step-up challenge";
-      setStepUpError(message);
-      setPageFeedback({ type: "error", title: "Verification required", message });
-      toast.error(message);
-    } finally {
-      setStepUpRequesting(false);
-    }
-  };
-
-  const closeStepUpModal = () => {
-    setStepUpModalOpen(false);
-    setStepUpChallenge(null);
-    setStepUpCode("");
-    setStepUpRequesting(false);
-    setStepUpVerifying(false);
-    setStepUpError(null);
-    setPendingAction(null);
+    setPasswordValue("");
+    setPasswordError(null);
+    setPageFeedback(null);
+    setPasswordModalOpen(true);
   };
 
   const raiseBeneficiaryFeedback = (
@@ -157,45 +127,36 @@ export const BeneficiaryPage = () => {
     }
   };
 
-  const requestNewStepUpCode = async () => {
-    if (!pendingAction) return;
-
-    if (pendingAction.kind === "create") {
-      await requestBeneficiaryChallenge(
-        "BENEFICIARY_CREATE",
-        buildBeneficiaryCreateContext(pendingAction.payload),
-        pendingAction
-      );
-      return;
-    }
-
-    if (pendingAction.kind === "update") {
-      await requestBeneficiaryChallenge(
-        "BENEFICIARY_UPDATE",
-        buildBeneficiaryUpdateContext(pendingAction.beneficiaryId, pendingAction.payload),
-        pendingAction
-      );
-      return;
-    }
-
-    await requestBeneficiaryChallenge(
-      "BENEFICIARY_DELETE",
-      buildBeneficiaryDeleteContext(pendingAction.beneficiaryId),
-      pendingAction
-    );
+  const closePasswordModal = () => {
+    setPasswordModalOpen(false);
+    setPasswordValue("");
+    setPasswordSubmitting(false);
+    setPasswordError(null);
+    setPendingAction(null);
   };
 
-  const submitStepUpCode = async (e: React.FormEvent) => {
+  const submitPasswordConfirmation = async (e: FormEvent) => {
     e.preventDefault();
-    if (!stepUpChallenge || !pendingAction) return;
+    if (!pendingAction) return;
 
-    setStepUpVerifying(true);
-    setStepUpError(null);
+    setPasswordSubmitting(true);
+    setPasswordError(null);
 
     try {
-      const verification = await verifyStepUpChallengeApi({
-        challengeId: stepUpChallenge.challengeId,
-        code: stepUpCode.trim(),
+      const verification = await authService.confirmPassword({
+        action:
+          pendingAction.kind === "create"
+            ? "BENEFICIARY_CREATE"
+            : pendingAction.kind === "update"
+              ? "BENEFICIARY_UPDATE"
+              : "BENEFICIARY_DELETE",
+        context:
+          pendingAction.kind === "create"
+            ? buildBeneficiaryCreateContext(pendingAction.payload)
+            : pendingAction.kind === "update"
+              ? buildBeneficiaryUpdateContext(pendingAction.beneficiaryId, pendingAction.payload)
+              : buildBeneficiaryDeleteContext(pendingAction.beneficiaryId),
+        password: passwordValue,
       });
 
       const action = pendingAction;
@@ -227,14 +188,14 @@ export const BeneficiaryPage = () => {
         raiseBeneficiaryFeedback("success", "Beneficiary deleted", "The beneficiary was removed successfully.");
       }
 
-      closeStepUpModal();
+      closePasswordModal();
     } catch (err: any) {
-      const message = err.response?.data?.message || "Step-up verification failed";
-      setStepUpError(message);
+      const message = err.response?.data?.message || err.message || "Password confirmation failed";
+      setPasswordError(message);
       setPageFeedback({ type: "error", title: "Beneficiary action failed", message });
       toast.error(message);
     } finally {
-      setStepUpVerifying(false);
+      setPasswordSubmitting(false);
     }
   };
 
@@ -253,23 +214,11 @@ export const BeneficiaryPage = () => {
   }, [watchCountryCode, setValue]);
 
   const onSubmit = async (formData: BeneficiaryFormData) => {
-    try {
-      if (editingId) {
-        await requestBeneficiaryChallenge(
-          "BENEFICIARY_UPDATE",
-          buildBeneficiaryUpdateContext(editingId, formData),
-          { kind: "update", beneficiaryId: editingId, payload: formData }
-        );
-      } else {
-        await requestBeneficiaryChallenge(
-          "BENEFICIARY_CREATE",
-          buildBeneficiaryCreateContext(formData),
-          { kind: "create", payload: formData }
-        );
-      }
-    } catch (err) {
-      // API error handled by hook
-    }
+    openPasswordModal(
+      editingId
+        ? { kind: "update", beneficiaryId: editingId, payload: formData }
+        : { kind: "create", payload: formData }
+    );
   };
 
   const clearPageFeedback = () => setPageFeedback(null);
@@ -592,16 +541,10 @@ export const BeneficiaryPage = () => {
                     >
                       <Edit2 size={13}/>
                     </button>
-                      <button 
+                    <button 
                       onClick={async () => {
-                        if (window.confirm("Are you sure you want to delete this beneficiary?")) {
-                          setPageFeedback(null);
-                          await requestBeneficiaryChallenge(
-                            "BENEFICIARY_DELETE",
-                            buildBeneficiaryDeleteContext(b.id!),
-                            { kind: "delete", beneficiaryId: b.id! }
-                          );
-                        }
+                        setPageFeedback(null);
+                        openPasswordModal({ kind: "delete", beneficiaryId: b.id! });
                       }} 
                       className="p-1.5 text-slate-600 rounded-md hover:text-red-600 hover:bg-red-50 transition-colors"
                       title="Delete"
@@ -616,21 +559,23 @@ export const BeneficiaryPage = () => {
         </div>
       </div>
 
-      <StepUpCodeModal
-        open={stepUpModalOpen}
-        title="Confirm beneficiary change"
-        description="Enter the verification code to complete this beneficiary action."
-        challenge={stepUpChallenge}
-        code={stepUpCode}
-        error={stepUpError}
-        isRequesting={stepUpRequesting}
-        isVerifying={stepUpVerifying}
+      <PasswordConfirmationModal
+        open={passwordModalOpen}
+        title={
+          pendingAction?.kind === "delete"
+            ? "Confirm beneficiary deletion"
+            : pendingAction?.kind === "update"
+              ? "Confirm beneficiary update"
+              : "Confirm beneficiary creation"
+        }
+        description="Enter your password to complete this beneficiary action."
+        password={passwordValue}
+        error={passwordError}
+        isSubmitting={passwordSubmitting}
         submitLabel="Confirm"
-        resendLabel="Resend Code"
-        onCodeChange={setStepUpCode}
-        onSubmit={submitStepUpCode}
-        onCancel={closeStepUpModal}
-        onRequestNewCode={requestNewStepUpCode}
+        onPasswordChange={setPasswordValue}
+        onSubmit={submitPasswordConfirmation}
+        onCancel={closePasswordModal}
       />
     </div>
   );

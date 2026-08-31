@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Currencies } from '../../wallet/validation/walletSchema';
+import { StepUpActionSchema } from '../../admin/validation/adminSchema';
 
 // Login Validation
 export const loginSchema = z.object({
@@ -31,12 +32,19 @@ export const registerSchema = z.object({
   ),
 });
 
+export const passwordConfirmationSchema = z.object({
+  action: StepUpActionSchema,
+  context: z.string().min(1, 'Action context is required'),
+  password: z.string().min(1, 'Password is required'),
+});
+
 // Export inferred TypeScript types for React Hook Form
 export type LoginFormData = z.infer<typeof loginSchema>;
 // Input type: pre-validation form values (currency may be '' from the select placeholder)
 export type RegisterFormInput = z.input<typeof registerSchema>;
 // Output type: post-validation values sent to the backend
 export type RegisterFormData = z.infer<typeof registerSchema>;
+export type PasswordConfirmationFormData = z.infer<typeof passwordConfirmationSchema>;
 
 // Backend Response Interface
 export interface AuthResponse {
