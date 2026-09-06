@@ -1,4 +1,5 @@
 import { useLiveQuote } from "../hooks/useRatesHook";
+import { Skeleton } from "../../../components/ui/Skeleton";
 
 
 export interface RateDisplayCardProps {
@@ -21,20 +22,18 @@ export const RateDisplayCard: React.FC<RateDisplayCardProps> = ({
 
   if (isLoading) {
     return (
-      <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 mt-4 animate-pulse">
-        Fetching live market rate...
+      <div role="status" aria-label="Loading live market rate" className="p-4 bg-gray-50 border border-gray-200 rounded-lg mt-4 space-y-3">
+        <Skeleton className="h-4 w-48" />
+        <Skeleton className="h-7 w-36" />
+        <span className="sr-only">Fetching live market rate...</span>
       </div>
     );
   }
 
   if (error) {
-    const errorMessage = typeof error === 'string' 
-      ? error 
-      : (error as any)?.error || (error as any)?.message || "Market rates unavailable";
-
     return (
       <div className="p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm mt-4">
-        {errorMessage}
+        {error || "Market rates unavailable"}
       </div>
     );
   }

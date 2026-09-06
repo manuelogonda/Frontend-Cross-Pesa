@@ -1,6 +1,7 @@
-import { ChevronLeft, ChevronRight, Inbox, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Inbox } from "lucide-react";
 import type { FormattedLedgerEntry } from "../types";
 import { LedgerEntryRow } from "./LedgerEntryRow";
+import { Skeleton } from "../../../components/ui/Skeleton";
 
 interface LedgerTableProps {
   entries: FormattedLedgerEntry[];
@@ -36,14 +37,14 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({
           </thead>
           <tbody className="divide-y divide-slate-100">
             {isLoading ? (
-              <tr>
-                <td colSpan={4} className="p-12 text-center text-slate-400">
-                  <div className="flex flex-col items-center gap-2">
-                    <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-                    <span className="text-xs font-medium text-slate-500">Fetching immutable statement...</span>
-                  </div>
-                </td>
-              </tr>
+              Array.from({ length: 5 }, (_, index) => (
+                <tr key={index} aria-hidden="true" className="border-b border-slate-100">
+                  <td className="p-4"><Skeleton className="h-4 w-24" /><Skeleton className="h-3 w-16 mt-2" /></td>
+                  <td className="p-4"><Skeleton className="h-4 w-36" /><Skeleton className="h-4 w-20 mt-2" /></td>
+                  <td className="p-4"><Skeleton className="h-4 w-20" /></td>
+                  <td className="p-4"><Skeleton className="h-4 w-24" /></td>
+                </tr>
+              ))
             ) : entries.length === 0 ? (
               <tr>
                 <td colSpan={4} className="p-12 text-center">
@@ -59,6 +60,7 @@ export const LedgerTable: React.FC<LedgerTableProps> = ({
           </tbody>
         </table>
       </div>
+      {isLoading && <span className="sr-only" role="status">Loading transaction history...</span>}
 
       {/* Internal Pagination Footer (Renders only if props are provided) */}
       {(page !== undefined && totalPages !== undefined && onNextPage && onPrevPage) && (

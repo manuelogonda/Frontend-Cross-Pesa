@@ -1,6 +1,7 @@
 import { useWallets } from "../hooks/useWallets";
-import { AlertCircle, ArrowUpRight, ChevronLeft, ChevronRight, RefreshCcw, Wallet } from "lucide-react";
+import { AlertCircle, ArrowUpRight, ChevronLeft, ChevronRight, RefreshCcw } from "lucide-react";
 import { WalletCard } from "../components/WalletCard";
+import { DashboardSkeleton } from "../../../components/ui/Skeleton";
 import { useNavigate } from "react-router-dom";
 import { useWalletStatement } from "../hooks/useWalletStatement";
 import { LedgerTable } from "../../ledger/components/LedgerTable";
@@ -23,13 +24,7 @@ export const WalletDashboardPage = () => {
   } = useWalletStatement(5); // Show 5 entries per page for a cleaner dashboard view
 
   if (isLoadingWallet) {
-    return (
-      <div className="flex justify-center items-center h-64 text-slate-500">
-         <div className="animate-pulse text-lg font-medium flex items-center gap-2">
-           <Wallet className="text-slate-400" /> Loading dashboard...
-         </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (walletError) {

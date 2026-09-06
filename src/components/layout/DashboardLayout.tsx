@@ -1,11 +1,35 @@
 import { LayoutDashboard, LogOut, PlusCircle, Send, User, Users, Wallet } from 'lucide-react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import NotificationBell from '../../features/notifications/components/NotificationBell';
 import { useAuthStore } from '../../store/authStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { NOTIFICATIONS_QUERY_KEY } from '../../features/notifications/hooks/useNotifications';
 
 export const DashboardLayout = () => {
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const queryClient = useQueryClient();
+
+  const getUserInitials = () => {
+    const firstInitial = user?.firstName?.trim()?.charAt(0)?.toUpperCase() ?? '';
+    const lastInitial = user?.lastName?.trim()?.charAt(0)?.toUpperCase() ?? '';
+    const initials = `${firstInitial}${lastInitial}`.trim();
+
+    if (initials) {
+      return initials;
+    }
+
+    return user?.firstName?.trim()?.charAt(0)?.toUpperCase()
+      || user?.lastName?.trim()?.charAt(0)?.toUpperCase()
+      || user?.email?.trim()?.charAt(0)?.toUpperCase()
+      || '?';
+  };
+
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
+  }, [queryClient]);
 
   const handleLogout = () => {
     logout();
@@ -16,9 +40,12 @@ export const DashboardLayout = () => {
     <div className="flex h-screen w-full bg-slate-50">
       {/* Sidebar - Retail */}
       <aside className="w-64 bg-white border-r border-slate-200 flex flex-col shrink-0">
-        <div className="p-6 font-bold text-xl text-indigo-600 flex items-center gap-2">
-            <Wallet /> CrossPesa
-        </div>
+        <Link
+          to="/dashboard"
+          className="p-6 font-bold text-xl text-indigo-600 flex items-center gap-2"
+        >
+          <Wallet /> CrossPesa
+        </Link>
         
         <nav className="flex-1 px-4 space-y-2 mt-4">
             <NavLink to="/dashboard" className={({ isActive }) => `flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${isActive ? 'bg-indigo-50 text-indigo-700 font-medium' : 'hover:bg-slate-100 text-slate-700'}`}>
@@ -45,7 +72,7 @@ export const DashboardLayout = () => {
           <div className="flex items-center gap-6">
             <NotificationBell />
             <div className="h-9 w-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm cursor-pointer">
-              <span>JP</span>
+              <span>{getUserInitials()}</span>
             </div>
             <div className="pl-4 border-l border-slate-200">
               <button onClick={handleLogout} className="flex items-center gap-2 text-slate-500 hover:text-red-600 transition-colors font-medium">
