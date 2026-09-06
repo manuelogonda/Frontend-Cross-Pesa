@@ -17,6 +17,9 @@ export const useNotifications = () => {
     refetchInterval: POLL_INTERVAL_MS,
     refetchIntervalInBackground: false,
     staleTime: 15_000,
+    // The bell can mount after returning from the standalone top-up
+    // verification route. Always fetch the latest unread count on mount.
+    refetchOnMount: 'always',
   });
 
   const readMutation = useMutation({

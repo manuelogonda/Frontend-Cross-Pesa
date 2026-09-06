@@ -7,6 +7,8 @@ type StepUpCodeModalProps = {
   title: string;
   description: string;
   challenge: StepUpChallengeResponse | null;
+  verificationCode?: string | null;
+  verificationMessage?: string | null;
   code: string;
   error?: string | null;
   isRequesting?: boolean;
@@ -24,6 +26,8 @@ export const StepUpCodeModal = ({
   title,
   description,
   challenge,
+  verificationCode,
+  verificationMessage,
   code,
   error,
   isRequesting = false,
@@ -64,6 +68,20 @@ export const StepUpCodeModal = ({
                   Expires at: <span className="font-medium text-slate-900">{challenge.expiresAt}</span>
                 </p>
               </div>
+
+              {(verificationCode || verificationMessage) && (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+                  <p className="font-semibold">Your verification code</p>
+                  {verificationCode ? (
+                    <p className="mt-1 text-2xl font-extrabold tracking-[0.35em] text-emerald-700">
+                      {verificationCode}
+                    </p>
+                  ) : (
+                    <p className="mt-1">{verificationMessage}</p>
+                  )}
+                  <p className="mt-2 text-xs text-emerald-700">Use this code to authorize your transfer.</p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">

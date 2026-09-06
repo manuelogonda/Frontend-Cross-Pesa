@@ -11,6 +11,7 @@ import { getTransactionStatusApi } from "../api/transactionApi";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { NOTIFICATIONS_QUERY_KEY } from "../../notifications/hooks/useNotifications";
+import { useNotifications } from "../../notifications/hooks/useNotifications";
 import type { TransferFormData } from "../validation/transferSchema";
 import { StepUpCodeModal } from "../../../components/ui/StepUpCodeModal";
 import { buildStepUpContext, requestStepUpChallengeApi, verifyStepUpChallengeApi } from "../../../lib/stepUp";
@@ -44,6 +45,7 @@ export const TransferForm = () => {
   });
 
   const { execute, isSubmitting, error, successData, setSuccessData, reset: resetTransferState, getIdempotencyKey } = useTransfer();
+  const { notifications } = useNotifications();
   const queryClient = useQueryClient();
   const [pendingTransfer, setPendingTransfer] = useState<TransferFormData | null>(null);
   const [stepUpModalOpen, setStepUpModalOpen] = useState(false);
@@ -54,6 +56,22 @@ export const TransferForm = () => {
   const [stepUpError, setStepUpError] = useState<string | null>(null);
 
   const TRANSFER_STEP_UP_ACTION: StepUpAction = "TRANSACTION_SEND";
+
+  // Step-up codes are delivered as in-app notifications. Keep the newest
+  // relevant notification available to the modal so the user can continue
+  // without opening the notification bell.
+  const stepUpNotification = notifications
+    .filter((notification) => notification.status !== "ARCHIVED")
+    .filter((notification) => {
+      const text = `${notification.title} ${notification.message}`.toLowerCase();
+      return ["verification", "otp", "step-up", "authorization", "authorisation"].some((term) =>
+        text.includes(term)
+      );
+    })
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0];
+
+  const notificationText = stepUpNotification?.message ?? null;
+  const notificationCode = notificationText?.match(/\b\d{4,8}\b/)?.[0] ?? null;
 
   // Settlement just landed (payout sent or funds refunded) — balances moved and
   // the backend wrote the completion notification. Pull fresh server state now
@@ -100,6 +118,7 @@ export const TransferForm = () => {
       setStepUpChallenge(challenge);
       setStepUpCode("");
       setStepUpModalOpen(true);
+      await queryClient.refetchQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
     } catch (err: any) {
       setStepUpChallenge(null);
       setStepUpModalOpen(true);
@@ -180,6 +199,17 @@ export const TransferForm = () => {
 
     return () => clearInterval(intervalId);
   }, [successData?.id, successData?.status, setSuccessData]);
+
+  useEffect(() => {
+    if (!stepUpModalOpen || !stepUpChallenge) return;
+
+    void queryClient.refetchQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
+    const intervalId = setInterval(() => {
+      void queryClient.refetchQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });
+    }, 3000);
+
+    return () => clearInterval(intervalId);
+  }, [queryClient, stepUpModalOpen, stepUpChallenge?.challengeId]);
 
   const activeSourceCurrency = watch("sourceCurrency") || wallet?.currency || 'USD';
 
@@ -423,6 +453,8 @@ export const TransferForm = () => {
         title="Confirm transfer"
         description="Enter the verification code to authorize this transfer."
         challenge={stepUpChallenge}
+        verificationCode={notificationCode}
+        verificationMessage={notificationCode ? null : notificationText}
         code={stepUpCode}
         error={stepUpError}
         isRequesting={stepUpRequesting}

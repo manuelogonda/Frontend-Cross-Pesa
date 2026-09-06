@@ -15,7 +15,10 @@ const NotificationBell: React.FC = () => {
         <Bell className="h-6 w-6" />
         
         {unreadCount > 0 && (
-          <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/3 -translate-y-1/3 bg-red-500 rounded-full border-2 border-white animate-pulse">
+          <span
+            aria-label={`${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`}
+            className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/3 -translate-y-1/3 bg-red-500 rounded-full border-2 border-white animate-pulse"
+          >
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}

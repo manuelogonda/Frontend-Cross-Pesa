@@ -2,6 +2,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useWallets } from "../hooks/useWallets";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, CheckCircle, Loader2, XCircle } from "lucide-react";
+import { toast } from "../../../store/toastStore";
 
 export const VerifyTopUpPage = () => {
   const [searchParams] = useSearchParams();
@@ -36,6 +37,7 @@ export const VerifyTopUpPage = () => {
 
       if (isSuccess) {
         setVerificationStatus('success');
+        toast.success('Top-up successful. Your wallet and notifications have been updated.');
         
         // Auto-redirect to dashboard after 3 seconds
         setTimeout(() => navigate('/dashboard'), 3000);
