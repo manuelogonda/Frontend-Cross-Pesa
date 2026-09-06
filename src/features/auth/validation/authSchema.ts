@@ -49,7 +49,17 @@ export type PasswordConfirmationFormData = z.infer<typeof passwordConfirmationSc
 // Backend Response Interface
 export interface AuthResponse {
   token: string;
+  accessToken?: string;
+  refreshToken?: string;
   email: string;
   firstName: string;
+  lastName?: string;
   role: string;
+  user?: {
+    id?: string;
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    role?: string;
+  };
 }

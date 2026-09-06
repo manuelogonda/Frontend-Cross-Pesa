@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../store/authStore";
 import { useEffect } from "react";
+import { decodeJwtPayload } from "../../lib/jwt";
+import { normalizeAuthUser, type AuthUserLike } from "../../lib/userProfile";
 
 export const OAuth2RedirectHandler = () => {
   const navigate = useNavigate();
@@ -21,16 +23,20 @@ export const OAuth2RedirectHandler = () => {
     window.history.replaceState(null, '', window.location.pathname + window.location.search);
 
     if (accessToken && refreshToken) {
-      // Decode your token here if you have user info in it, 
-      // or fetch the user profile from a /me endpoint
-      login({
-        user: { 
-            id: 'google-user', 
-            email: 'google-user@example.com', 
-            firstName: 'Google', 
-            lastName: 'User', 
-            role: 'USER' 
+      const tokenPayload = decodeJwtPayload(accessToken);
+      const user = normalizeAuthUser({
+        tokenPayload: tokenPayload as AuthUserLike | null,
+        response: {
+          email: tokenPayload?.email as string | undefined,
+          firstName: tokenPayload?.firstName as string | undefined,
+          lastName: tokenPayload?.lastName as string | undefined,
+          role: (tokenPayload?.role as string | undefined) ?? 'USER',
+          id: tokenPayload?.sub as string | undefined,
         },
+      });
+
+      login({
+        user,
         accessToken,
         refreshToken
       });

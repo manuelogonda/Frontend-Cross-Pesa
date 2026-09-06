@@ -5,6 +5,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { NOTIFICATIONS_QUERY_KEY } from '../../features/notifications/hooks/useNotifications';
+import { buildInitials } from '../../lib/userProfile';
 
 export const DashboardLayout = () => {
   const navigate = useNavigate();
@@ -12,20 +13,7 @@ export const DashboardLayout = () => {
   const logout = useAuthStore((state) => state.logout);
   const queryClient = useQueryClient();
 
-  const getUserInitials = () => {
-    const firstInitial = user?.firstName?.trim()?.charAt(0)?.toUpperCase() ?? '';
-    const lastInitial = user?.lastName?.trim()?.charAt(0)?.toUpperCase() ?? '';
-    const initials = `${firstInitial}${lastInitial}`.trim();
-
-    if (initials) {
-      return initials;
-    }
-
-    return user?.firstName?.trim()?.charAt(0)?.toUpperCase()
-      || user?.lastName?.trim()?.charAt(0)?.toUpperCase()
-      || user?.email?.trim()?.charAt(0)?.toUpperCase()
-      || '?';
-  };
+  const getUserInitials = () => buildInitials(user?.firstName, user?.lastName, user?.email);
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_QUERY_KEY });

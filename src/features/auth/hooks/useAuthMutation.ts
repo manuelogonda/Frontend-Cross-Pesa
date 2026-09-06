@@ -2,6 +2,8 @@ import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../store/authStore';
 import { authService } from '../services/authService';
+import { normalizeAuthUser, type AuthUserLike } from '../../../lib/userProfile';
+import { decodeJwtPayload } from '../../../lib/jwt';
 
 export const useLogin = () => {
   const loginToStore = useAuthStore((state) => state.login);
@@ -9,12 +11,18 @@ export const useLogin = () => {
 
   return useMutation({
     mutationFn: authService.login,
-    onSuccess: (data: any) => {
-      // Map response fields to match Zustand store expectations
+    onSuccess: (data: any, variables) => {
+      const token = data.accessToken || data.token;
+      const user = normalizeAuthUser({
+        response: data,
+        submitted: variables,
+        tokenPayload: (token ? decodeJwtPayload(token) : null) as AuthUserLike | null,
+      });
+
       loginToStore({
-        user: data.user,
-        accessToken: data.accessToken || data.token,
-        refreshToken: data.refreshToken,
+        user,
+        accessToken: token,
+        refreshToken: data.refreshToken ?? '',
       });
       navigate('/dashboard');
     },
@@ -27,11 +35,18 @@ export const useRegister = () => {
 
   return useMutation({
     mutationFn: authService.register,
-    onSuccess: (data: any) => {
+    onSuccess: (data: any, variables) => {
+      const token = data.accessToken || data.token;
+      const user = normalizeAuthUser({
+        response: data,
+        submitted: variables,
+        tokenPayload: (token ? decodeJwtPayload(token) : null) as AuthUserLike | null,
+      });
+
       loginToStore({
-        user: data.user,
-        accessToken: data.accessToken || data.token,
-        refreshToken: data.refreshToken,
+        user,
+        accessToken: token,
+        refreshToken: data.refreshToken ?? '',
       });
       navigate('/dashboard');
     },
